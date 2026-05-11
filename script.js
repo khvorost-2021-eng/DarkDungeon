@@ -92,6 +92,152 @@ const MusicManager = {
     }
 };
 
+// ========== SFX МЕНЕДЖЕР ==========
+const SFXManager = {
+    audioContext: null,
+    
+    init() {
+        if (!this.audioContext) {
+            this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        }
+    },
+    
+    // Звук клика кнопки
+    playClick() {
+        if (!this.audioContext) return;
+        const osc = this.audioContext.createOscillator();
+        const gain = this.audioContext.createGain();
+        
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(800, this.audioContext.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(400, this.audioContext.currentTime + 0.05);
+        
+        gain.gain.setValueAtTime(0.1, this.audioContext.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.05);
+        
+        osc.connect(gain);
+        gain.connect(this.audioContext.destination);
+        
+        osc.start();
+        osc.stop(this.audioContext.currentTime + 0.05);
+    },
+    
+    // Звук удара меча
+    playAttack() {
+        if (!this.audioContext) return;
+        // Свист меча + удар
+        const osc = this.audioContext.createOscillator();
+        const gain = this.audioContext.createGain();
+        const filter = this.audioContext.createBiquadFilter();
+        
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(400, this.audioContext.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(100, this.audioContext.currentTime + 0.15);
+        
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(1000, this.audioContext.currentTime);
+        filter.frequency.exponentialRampToValueAtTime(200, this.audioContext.currentTime + 0.15);
+        
+        gain.gain.setValueAtTime(0.15, this.audioContext.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.15);
+        
+        osc.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.audioContext.destination);
+        
+        osc.start();
+        osc.stop(this.audioContext.currentTime + 0.15);
+    },
+    
+    // Звук победы
+    playVictory() {
+        if (!this.audioContext) return;
+        const now = this.audioContext.currentTime;
+        
+        [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
+            const osc = this.audioContext.createOscillator();
+            const gain = this.audioContext.createGain();
+            
+            osc.type = 'sine';
+            osc.frequency.value = freq;
+            
+            gain.gain.setValueAtTime(0, now + i * 0.1);
+            gain.gain.linearRampToValueAtTime(0.2, now + i * 0.1 + 0.05);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + i * 0.1 + 0.4);
+            
+            osc.connect(gain);
+            gain.connect(this.audioContext.destination);
+            
+            osc.start(now + i * 0.1);
+            osc.stop(now + i * 0.1 + 0.5);
+        });
+    },
+    
+    // Звук смерти
+    playDeath() {
+        if (!this.audioContext) return;
+        const osc = this.audioContext.createOscillator();
+        const gain = this.audioContext.createGain();
+        
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(100, this.audioContext.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(20, this.audioContext.currentTime + 1);
+        
+        gain.gain.setValueAtTime(0.3, this.audioContext.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 1);
+        
+        osc.connect(gain);
+        gain.connect(this.audioContext.destination);
+        
+        osc.start();
+        osc.stop(this.audioContext.currentTime + 1);
+    },
+    
+    // Звук покупки
+    playBuy() {
+        if (!this.audioContext) return;
+        const now = this.audioContext.currentTime;
+        
+        [880, 1100].forEach((freq, i) => {
+            const osc = this.audioContext.createOscillator();
+            const gain = this.audioContext.createGain();
+            
+            osc.type = 'sine';
+            osc.frequency.value = freq;
+            
+            gain.gain.setValueAtTime(0, now + i * 0.05);
+            gain.gain.linearRampToValueAtTime(0.15, now + i * 0.05 + 0.02);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + i * 0.05 + 0.2);
+            
+            osc.connect(gain);
+            gain.connect(this.audioContext.destination);
+            
+            osc.start(now + i * 0.05);
+            osc.stop(now + i * 0.05 + 0.25);
+        });
+    },
+    
+    // Звук ошибки / недостаточно денег
+    playError() {
+        if (!this.audioContext) return;
+        const osc = this.audioContext.createOscillator();
+        const gain = this.audioContext.createGain();
+        
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(150, this.audioContext.currentTime);
+        osc.frequency.linearRampToValueAtTime(100, this.audioContext.currentTime + 0.2);
+        
+        gain.gain.setValueAtTime(0.1, this.audioContext.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.2);
+        
+        osc.connect(gain);
+        gain.connect(this.audioContext.destination);
+        
+        osc.start();
+        osc.stop(this.audioContext.currentTime + 0.2);
+    }
+};
+
 // ========== КОМПОНЕНТЫ ==========
 
 const SpinningSword = ({ weapon }) => {
@@ -405,9 +551,9 @@ const MainMenu = ({ onPlay, onShop }) => (
         <div className="menu-bg" />
         <div className="menu-title">DARK DUNGEON</div>
         <div className="menu-buttons">
-            <button className="menu-btn primary" onClick={onPlay}>УРОВНИ</button>
-            <button className="menu-btn" onClick={onShop}>МАГАЗИН</button>
-            <button className="menu-btn" onClick={() => alert('Профиль — в разработке')}>ПРОФИЛЬ</button>
+            <button className="menu-btn primary" onClick={() => { SFXManager.playClick(); onPlay(); }}>УРОВНИ</button>
+            <button className="menu-btn" onClick={() => { SFXManager.playClick(); onShop(); }}>МАГАЗИН</button>
+            <button className="menu-btn" onClick={() => { SFXManager.playClick(); alert('Профиль — в разработке'); }}>ПРОФИЛЬ</button>
         </div>
     </div>
 );
@@ -464,21 +610,22 @@ const LevelSelect = ({ onBack, onSelectLevel, unlockedLevels }) => {
 };
 
 // ========== МАГАЗИН ==========
-const Shop = ({ money, inventory, equippedPet, buyItem, onClose, onEquipPet }) => {
+const Shop = ({ money, inventory, equippedPet, equippedWeapon, buyItem, onClose, onEquipPet, onEquipWeapon }) => {
     const [activeTab, setActiveTab] = useState('weapons');
 
     const handleClose = () => {
+        SFXManager.playClick();
         onClose();
     };
     
     const shopItems = {
         weapons: [
-            { id: 'iron-sword', name: 'Железный меч', price: 100, desc: '+15 к урону', rarity: 'common', icon: '⚔️' },
-            { id: 'steel-sword', name: 'Стальной меч', price: 250, desc: '+30 к урону', rarity: 'rare', icon: '🗡️' },
-            { id: 'dark-sword', name: 'Меч Тьмы', price: 500, desc: '+50 к урону', rarity: 'epic', icon: '⚫' },
-            { id: 'fire-blade', name: 'Огненный клинок', price: 600, desc: '+70 к урону', rarity: 'epic', icon: '🔥' },
-            { id: 'ice-blade', name: 'Ледяной клинок', price: 600, desc: '+70 к урону', rarity: 'epic', icon: '❄️' },
-            { id: 'excalibur', name: 'Экскалибур', price: 1000, desc: '+100 к урону', rarity: 'legendary', icon: '✨' },
+            { id: 'iron-sword', name: 'Железный меч', price: 100, desc: '+15 к урону', rarity: 'common', icon: '⚔️', weaponType: 'steel' },
+            { id: 'steel-sword', name: 'Стальной меч', price: 250, desc: '+30 к урону', rarity: 'rare', icon: '🗡️', weaponType: 'steel' },
+            { id: 'dark-sword', name: 'Меч Тьмы', price: 500, desc: '+50 к урону', rarity: 'epic', icon: '⚫', weaponType: 'dark' },
+            { id: 'fire-blade', name: 'Огненный клинок', price: 600, desc: '+70 к урону', rarity: 'epic', icon: '🔥', weaponType: 'fire' },
+            { id: 'ice-blade', name: 'Ледяной клинок', price: 600, desc: '+70 к урону', rarity: 'epic', icon: '❄️', weaponType: 'ice' },
+            { id: 'excalibur', name: 'Экскалибур', price: 1000, desc: '+100 к урону', rarity: 'legendary', icon: '✨', weaponType: 'excalibur' },
         ],
         armor: [
             { id: 'leather-armor', name: 'Кожаная броня', price: 80, desc: '-10% урона', rarity: 'common', icon: '🛡️' },
@@ -516,9 +663,22 @@ const Shop = ({ money, inventory, equippedPet, buyItem, onClose, onEquipPet }) =
     };
 
     const handleBuy = (item) => {
+        const owned = inventory.includes(item.id);
+        if (!owned && money < item.price) {
+            SFXManager.playError();
+            return;
+        }
+        
         if (item.type) {
             // Это питомец - экипируем сразу
             onEquipPet(item.type);
+            SFXManager.playBuy();
+        } else if (item.weaponType) {
+            // Это оружие - экипируем сразу
+            onEquipWeapon(item.weaponType);
+            if (!owned) SFXManager.playBuy();
+        } else {
+            if (!owned) SFXManager.playBuy();
         }
         buyItem(item.id, item.price);
     };
@@ -549,7 +709,8 @@ const Shop = ({ money, inventory, equippedPet, buyItem, onClose, onEquipPet }) =
                 <div className="shop-items-grid">
                     {currentItems.map(item => {
                         const owned = inventory.includes(item.id);
-                        const equipped = equippedPet === item.type;
+                        const equipped = item.type ? equippedPet === item.type : 
+                                        item.weaponType ? equippedWeapon === item.weaponType : false;
                         const canAfford = money >= item.price;
                         return (
                             <div 
@@ -843,6 +1004,7 @@ const Game = () => {
     const handleAttack = useCallback(() => {
         if (isAttacking || gameState !== 'playing') return;
         setIsAttacking(true);
+        SFXManager.playAttack();
         
         setTimeout(() => {
             setEnemies(prevEnemies => {
@@ -901,6 +1063,7 @@ const Game = () => {
                             setUnlockedLevels(nextLevel);
                         }
                         setGameState('victory');
+                        SFXManager.playVictory();
                         if (gameLoopRef.current) {
                             clearInterval(gameLoopRef.current);
                             gameLoopRef.current = null;
@@ -930,32 +1093,90 @@ const Game = () => {
     }, [inventory, money]);
 
     const buyItem = useCallback((itemId, price) => {
-        if (money >= price && !inventory.includes(itemId)) {
+        const owned = inventory.includes(itemId);
+        if (!owned && money >= price) {
             setMoney(m => m - price);
             setPlayer(p => ({ ...p, money: p.money - price }));
             setInventory(prev => [...prev, itemId]);
 
-            // Применяем эффекты
+            // Применяем эффекты только при первой покупке
             setPlayer(p => {
                 let newDmg = p.dmg;
                 let newShield = p.shield;
-                let newWeapon = p.currentWeapon;
 
-                if (itemId === 'iron-sword') { newDmg += 15; newWeapon = 'basic'; }
-                if (itemId === 'steel-sword') { newDmg += 30; newWeapon = 'steel'; }
-                if (itemId === 'dark-sword') { newDmg += 50; newWeapon = 'dark'; }
-                if (itemId === 'excalibur') { newDmg += 100; newWeapon = 'excalibur'; }
-                if (itemId === 'fire-blade') { newDmg += 70; newWeapon = 'fire'; }
-                if (itemId === 'ice-blade') { newDmg += 70; newWeapon = 'ice'; }
+                if (itemId === 'iron-sword') newDmg += 15;
+                if (itemId === 'steel-sword') newDmg += 30;
+                if (itemId === 'dark-sword') newDmg += 50;
+                if (itemId === 'excalibur') newDmg += 100;
+                if (itemId === 'fire-blade') newDmg += 70;
+                if (itemId === 'ice-blade') newDmg += 70;
                 if (itemId === 'leather-armor') newShield = 0.1;
                 if (itemId === 'chain-mail') newShield = 0.25;
                 if (itemId === 'plate-armor') newShield = 0.4;
                 if (itemId === 'void-shield') newShield = 0.6;
 
-                return { ...p, dmg: newDmg, shield: newShield, currentWeapon: newWeapon };
+                return { ...p, dmg: newDmg, shield: newShield };
             });
         }
     }, [money, inventory]);
+
+    // Синхронизация equippedWeapon с player.currentWeapon
+    useEffect(() => {
+        setPlayer(p => ({ ...p, currentWeapon: equippedWeapon }));
+    }, [equippedWeapon]);
+
+    // Кнопки навигации в LevelSelect со звуками
+    const LevelSelectWithSound = ({ onBack, onSelectLevel, unlockedLevels }) => {
+        const [page, setPage] = useState(0);
+        const levelsPerPage = 15;
+
+        const levels = Array.from({ length: 100 }, (_, i) => ({
+            id: i + 1,
+            name: i < 20 ? LEVELS_DATA[i]?.name || `Уровень ${i + 1}` : `Уровень ${i + 1}`,
+        }));
+
+        const totalPages = Math.ceil(levels.length / levelsPerPage);
+        const startIndex = page * levelsPerPage;
+        const visibleLevels = levels.slice(startIndex, startIndex + levelsPerPage);
+
+        const goPrev = () => { SFXManager.playClick(); setPage(p => Math.max(0, p - 1)); };
+        const goNext = () => { SFXManager.playClick(); setPage(p => Math.min(totalPages - 1, p + 1)); };
+        const handleBack = () => { SFXManager.playClick(); onBack(); };
+        const handleSelect = (levelId) => { SFXManager.playClick(); onSelectLevel(levelId); };
+
+        return (
+            <div className="levels-screen">
+                <button className="levels-back-btn" onClick={handleBack}>◀</button>
+                <div className="levels-title">ВЫБЕРИТЕ УРОВЕНЬ</div>
+                <div className="levels-nav-container">
+                    <button className="levels-arrow" onClick={goPrev} disabled={page === 0}>◀</button>
+                    <div className="levels-grid">
+                        {visibleLevels.map(level => {
+                            const unlocked = level.id <= unlockedLevels;
+                            return (
+                                <div
+                                    key={level.id}
+                                    className={`level-card ${!unlocked ? 'locked' : ''}`}
+                                    onClick={() => unlocked && handleSelect(level.id)}
+                                >
+                                    {unlocked ? (
+                                        <>
+                                            <div className="level-number">{level.id}</div>
+                                            <div className="level-name">{level.name}</div>
+                                        </>
+                                    ) : (
+                                        <div className="level-lock">🔒</div>
+                                    )}
+                                </div>
+                            );
+                        })}
+                    </div>
+                    <button className="levels-arrow" onClick={goNext} disabled={page === totalPages - 1}>▶</button>
+                </div>
+                <div className="levels-page-indicator">{page + 1} / {totalPages}</div>
+            </div>
+        );
+    };
 
     const removeShard = useCallback((shardId) => {
         setShards(prev => prev.filter(s => s.id !== shardId));
@@ -979,6 +1200,7 @@ const Game = () => {
             // Проверка смерти
             if (player.hp <= 0) {
                 setIsShaking(true);
+                SFXManager.playDeath();
                 setTimeout(() => setGameState('dead'), 800);
                 return;
             }
@@ -1112,9 +1334,10 @@ const Game = () => {
         };
     }, [handleAttack]);
 
-    // Инициализация музыки
+    // Инициализация музыки и SFX
     useEffect(() => {
         MusicManager.init();
+        SFXManager.init();
     }, []);
     
     // Управление музыкой при смене состояния игры
@@ -1190,7 +1413,7 @@ const Game = () => {
             )}
 
             {gameState === 'levels' && (
-                <LevelSelect 
+                <LevelSelectWithSound 
                     onBack={() => setGameState('menu')}
                     onSelectLevel={handleStartLevel}
                     unlockedLevels={unlockedLevels}
@@ -1202,9 +1425,11 @@ const Game = () => {
                     money={money}
                     inventory={inventory}
                     equippedPet={equippedPet}
+                    equippedWeapon={equippedWeapon}
                     buyItem={buyItem}
                     onClose={() => setGameState('menu')}
                     onEquipPet={setEquippedPet}
+                    onEquipWeapon={setEquippedWeapon}
                 />
             )}
 
