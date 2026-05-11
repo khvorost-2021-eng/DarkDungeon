@@ -349,18 +349,14 @@ body { margin: 0; background: #0a0a0a; overflow: hidden; font-family: 'Cinzel', 
     bottom: 0;
     width: 50%;
     background: #0a0a0a;
-    transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: transform 0.5s ease-in-out;
     z-index: 250;
     pointer-events: none;
 }
-.shop-curtain-left { left: 0; transform: translateX(0); }
-.shop-curtain-right { right: 0; transform: translateX(0); }
-.shop-overlay.opening .shop-curtain-left { transform: translateX(-100%); }
-.shop-overlay.opening .shop-curtain-right { transform: translateX(100%); }
-.shop-overlay.open .shop-curtain-left { transform: translateX(-100%); }
-.shop-overlay.open .shop-curtain-right { transform: translateX(100%); }
-.shop-overlay.closing .shop-curtain-left { transform: translateX(0); }
-.shop-overlay.closing .shop-curtain-right { transform: translateX(0); }
+.shop-curtain-left { left: 0; transform: translateX(-100%); }
+.shop-curtain-right { right: 0; transform: translateX(100%); }
+.shop-overlay.open .shop-curtain-left { transform: translateX(0); }
+.shop-overlay.open .shop-curtain-right { transform: translateX(0); }
 .shop-close-btn {
     position: absolute;
     top: 20px;
@@ -668,13 +664,13 @@ body { margin: 0; background: #0a0a0a; overflow: hidden; font-family: 'Cinzel', 
 }
 
 /* Питомцы */
-.pet-wolf { 
-    background: linear-gradient(145deg, #555 0%, #333 100%); 
-    border-radius: 50% 50% 40% 40%; 
-    box-shadow: 0 0 15px rgba(100,100,100,0.5); 
-    animation: pet-bounce 1.5s infinite ease-in-out; 
-    width: 20px; 
-    height: 20px; 
+.pet-wolf {
+    background: linear-gradient(145deg, #555 0%, #333 100%);
+    border-radius: 50% 50% 40% 40%;
+    box-shadow: 0 0 15px rgba(100,100,100,0.5);
+    animation: pet-bounce 1.5s infinite ease-in-out;
+    width: 28px;
+    height: 28px;
 }
 .pet-wolf::before {
     content: '🐺';
@@ -682,15 +678,15 @@ body { margin: 0; background: #0a0a0a; overflow: hidden; font-family: 'Cinzel', 
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    font-size: 14px;
+    font-size: 18px;
 }
-.pet-raven { 
-    background: linear-gradient(145deg, #222 0%, #000 100%); 
-    border-radius: 50% 50% 30% 30%; 
-    box-shadow: 0 0 15px rgba(50,50,50,0.5); 
-    animation: pet-float 2s infinite ease-in-out; 
-    width: 18px; 
-    height: 18px; 
+.pet-raven {
+    background: linear-gradient(145deg, #222 0%, #000 100%);
+    border-radius: 50% 50% 30% 30%;
+    box-shadow: 0 0 15px rgba(50,50,50,0.5);
+    animation: pet-float 2s infinite ease-in-out;
+    width: 28px;
+    height: 28px;
 }
 .pet-raven::before {
     content: '🦅';
@@ -698,15 +694,15 @@ body { margin: 0; background: #0a0a0a; overflow: hidden; font-family: 'Cinzel', 
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    font-size: 12px;
+    font-size: 18px;
 }
-.pet-dragon { 
-    background: linear-gradient(145deg, #4a0000 0%, #2c0000 100%); 
-    border-radius: 50%; 
-    box-shadow: 0 0 20px rgba(139,0,0,0.6); 
-    animation: pet-breathe 2s infinite ease-in-out; 
-    width: 22px; 
-    height: 22px; 
+.pet-dragon {
+    background: linear-gradient(145deg, #4a0000 0%, #2c0000 100%);
+    border-radius: 50%;
+    box-shadow: 0 0 20px rgba(139,0,0,0.6);
+    animation: pet-breathe 2s infinite ease-in-out;
+    width: 28px;
+    height: 28px;
 }
 .pet-dragon::before {
     content: '🐲';
@@ -714,7 +710,7 @@ body { margin: 0; background: #0a0a0a; overflow: hidden; font-family: 'Cinzel', 
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    font-size: 14px;
+    font-size: 18px;
 }
 @keyframes pet-bounce {
     0%, 100% { transform: translateY(0); }
@@ -776,6 +772,36 @@ body { margin: 0; background: #0a0a0a; overflow: hidden; font-family: 'Cinzel', 
     animation: slash-anim 0.35s ease-out forwards;
     z-index: 100;
     filter: drop-shadow(0 0 15px rgba(255,255,255,0.6));
+}
+
+.slash.basic {
+    border-color: rgba(255,255,255,0.9);
+    filter: drop-shadow(0 0 15px rgba(255,255,255,0.6));
+}
+
+.slash.steel {
+    border-color: rgba(192,192,192,0.9);
+    filter: drop-shadow(0 0 15px rgba(192,192,192,0.6));
+}
+
+.slash.dark {
+    border-color: rgba(128,0,128,0.9);
+    filter: drop-shadow(0 0 15px rgba(128,0,128,0.6));
+}
+
+.slash.fire {
+    border-color: rgba(255,140,0,0.9);
+    filter: drop-shadow(0 0 15px rgba(255,140,0,0.6));
+}
+
+.slash.ice {
+    border-color: rgba(135,206,250,0.9);
+    filter: drop-shadow(0 0 15px rgba(135,206,250,0.6));
+}
+
+.slash.excalibur {
+    border-color: rgba(255,215,0,0.9);
+    filter: drop-shadow(0 0 15px rgba(255,215,0,0.6));
 }
 
 @keyframes slash-anim {

@@ -363,18 +363,14 @@ const LevelSelect = ({ onBack, onSelectLevel, unlockedLevels }) => {
 // ========== МАГАЗИН ==========
 const Shop = ({ money, inventory, equippedPet, buyItem, onClose, onEquipPet }) => {
     const [activeTab, setActiveTab] = useState('weapons');
-    const [curtainState, setCurtainState] = useState('opening');
+    const [curtainState, setCurtainState] = useState('');
 
     useEffect(() => {
-        setCurtainState('opening');
-        const timer = setTimeout(() => {
-            setCurtainState('open');
-        }, 500);
-        return () => clearTimeout(timer);
+        setCurtainState('open');
     }, []);
 
     const handleClose = () => {
-        setCurtainState('closing');
+        setCurtainState('');
         setTimeout(() => {
             onClose();
         }, 500);
@@ -385,6 +381,8 @@ const Shop = ({ money, inventory, equippedPet, buyItem, onClose, onEquipPet }) =
             { id: 'iron-sword', name: 'Железный меч', price: 100, desc: '+15 к урону', rarity: 'common', icon: '⚔️' },
             { id: 'steel-sword', name: 'Стальной меч', price: 250, desc: '+30 к урону', rarity: 'rare', icon: '🗡️' },
             { id: 'dark-sword', name: 'Меч Тьмы', price: 500, desc: '+50 к урону', rarity: 'epic', icon: '⚫' },
+            { id: 'fire-blade', name: 'Огненный клинок', price: 600, desc: '+70 к урону', rarity: 'epic', icon: '🔥' },
+            { id: 'ice-blade', name: 'Ледяной клинок', price: 600, desc: '+70 к урону', rarity: 'epic', icon: '❄️' },
             { id: 'excalibur', name: 'Экскалибур', price: 1000, desc: '+100 к урону', rarity: 'legendary', icon: '✨' },
         ],
         armor: [
@@ -551,6 +549,15 @@ const GameWorld = ({
 }) => {
     if (gameState !== 'playing') return null;
 
+    const handleMenuClick = () => {
+        onExitToMenu();
+    };
+
+    const getSlashClass = () => {
+        const weapon = player.currentWeapon || 'basic';
+        return `slash ${weapon}`;
+    };
+
     // Используем forceUpdate для обновления позиции
     const [, forceUpdate] = useReducer(x => x + 1, 0);
 
@@ -612,7 +619,7 @@ const GameWorld = ({
                         <div className="eye right"/>
                     </div>
                     <HPBar hp={player.hp} maxHp={player.maxHp} isVisible={playerHpVisible} />
-                    {isAttacking && <div className="slash" />}
+                    {isAttacking && <div className={getSlashClass()} />}
                 </div>
 
                 {equippedPet && equippedPet !== 'none' && (
@@ -655,7 +662,7 @@ const Game = () => {
     const [coinsEarned, setCoinsEarned] = useState(0);
 
     // Используем useState вместо useRef для позиций (фикс движения)
-    const [player, setPlayer] = useState({ x: 90, y: 90, hp: 100, maxHp: 100, dmg: 40, money: 200, shield: 0 });
+    const [player, setPlayer] = useState({ x: 90, y: 90, hp: 100, maxHp: 100, dmg: 40, money: 200, shield: 0, currentWeapon: 'basic' });
     const [pet, setPet] = useState({ x: 60, y: 90 });
     const [enemies, setEnemies] = useState([]);
     const [currentMap, setCurrentMap] = useState(LEVELS_DATA[0].map);
@@ -825,22 +832,25 @@ const Game = () => {
             setMoney(m => m - price);
             setPlayer(p => ({ ...p, money: p.money - price }));
             setInventory(prev => [...prev, itemId]);
-            
+
             // Применяем эффекты
             setPlayer(p => {
                 let newDmg = p.dmg;
                 let newShield = p.shield;
-                
-                if (itemId === 'iron-sword') newDmg += 15;
-                if (itemId === 'steel-sword') newDmg += 30;
-                if (itemId === 'dark-sword') newDmg += 50;
-                if (itemId === 'excalibur') newDmg += 100;
+                let newWeapon = p.currentWeapon;
+
+                if (itemId === 'iron-sword') { newDmg += 15; newWeapon = 'basic'; }
+                if (itemId === 'steel-sword') { newDmg += 30; newWeapon = 'steel'; }
+                if (itemId === 'dark-sword') { newDmg += 50; newWeapon = 'dark'; }
+                if (itemId === 'excalibur') { newDmg += 100; newWeapon = 'excalibur'; }
+                if (itemId === 'fire-blade') { newDmg += 70; newWeapon = 'fire'; }
+                if (itemId === 'ice-blade') { newDmg += 70; newWeapon = 'ice'; }
                 if (itemId === 'leather-armor') newShield = 0.1;
                 if (itemId === 'chain-mail') newShield = 0.25;
                 if (itemId === 'plate-armor') newShield = 0.4;
                 if (itemId === 'void-shield') newShield = 0.6;
-                
-                return { ...p, dmg: newDmg, shield: newShield };
+
+                return { ...p, dmg: newDmg, shield: newShield, currentWeapon: newWeapon };
             });
         }
     }, [money, inventory]);
@@ -1021,6 +1031,7 @@ const Game = () => {
         setEnemyHpVisible({});
         setIsShaking(false);
         setIsAttacking(false);
+        setCurrentLevel(levelId);
         initLevel(levelId);
         setGameState('playing');
     };
