@@ -82,6 +82,8 @@ const BloodParticles = ({ x, y }) => {
 const Coin = ({ startX, startY, endX, endY, onComplete }) => {
     const [pos, setPos] = useState({ x: startX, y: startY });
     const [isVisible, setIsVisible] = useState(true);
+    const onCompleteRef = useRef(onComplete);
+    onCompleteRef.current = onComplete;
 
     useEffect(() => {
         const duration = 600;
@@ -97,12 +99,12 @@ const Coin = ({ startX, startY, endX, endY, onComplete }) => {
                 requestAnimationFrame(animate);
             } else {
                 setIsVisible(false);
-                setTimeout(onComplete, 50);
+                setTimeout(() => onCompleteRef.current(), 50);
             }
         };
         const timer = setTimeout(animate, 100);
         return () => clearTimeout(timer);
-    }, [startX, startY, endX, endY, onComplete]);
+    }, [startX, startY, endX, endY]);
 
     if (!isVisible) return null;
 
