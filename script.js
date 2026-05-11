@@ -81,6 +81,7 @@ const BloodParticles = ({ x, y }) => {
 
 const Coin = ({ startX, startY, endX, endY, onComplete }) => {
     const [pos, setPos] = useState({ x: startX, y: startY });
+    const [scale, setScale] = useState(1);
     const [isVisible, setIsVisible] = useState(true);
     const onCompleteRef = useRef(onComplete);
     onCompleteRef.current = onComplete;
@@ -94,7 +95,10 @@ const Coin = ({ startX, startY, endX, endY, onComplete }) => {
             const ease = 1 - Math.pow(1 - progress, 3);
             const x = startX + (endX - startX) * ease;
             const y = startY + (endY - startY) * ease;
+            // Монета уменьшается от 1 до 0.4 (размер иконки в HUD)
+            const newScale = 1 - (progress * 0.6);
             setPos({ x, y });
+            setScale(newScale);
             if (progress < 1) {
                 requestAnimationFrame(animate);
             } else {
@@ -109,7 +113,7 @@ const Coin = ({ startX, startY, endX, endY, onComplete }) => {
     if (!isVisible) return null;
 
     return (
-        <div className="coin" style={{ position: 'absolute', left: pos.x, top: pos.y, transform: 'translate(-50%, -50%)', zIndex: 200 }} />
+        <div className="coin" style={{ position: 'absolute', left: pos.x, top: pos.y, transform: `translate(-50%, -50%) scale(${scale})`, zIndex: 200 }} />
     );
 };
 
@@ -743,10 +747,10 @@ const Game = () => {
                             setShards(s => [...s, { id: generateId(), x: en.x, y: en.y }]);
                             setBloodEffects(b => [...b, { id: generateId(), x: en.x, y: en.y }]);
                             
-                            // Монеты - летят к счётчику (HUD)
+                            // Монеты - летят к счётчику монет (🪙) в HUD
                             // Монеты рендерятся в экранных координатах (вне game-world)
-                            const hudScreenX = 60;
-                            const hudScreenY = 40;
+                            const hudCoinX = 150; // Позиция 🪙 в HUD (после ❤️)
+                            const hudCoinY = 30;
                             const worldOffsetX = -player.x + window.innerWidth / 2;
                             const worldOffsetY = -player.y + window.innerHeight / 2;
                             const coinId = generateId();
@@ -754,8 +758,8 @@ const Game = () => {
                                 id: coinId,
                                 startX: en.x + worldOffsetX, // Конвертируем мир в экран
                                 startY: en.y + worldOffsetY,
-                                endX: hudScreenX, // HUD в экранных координатах
-                                endY: hudScreenY
+                                endX: hudCoinX, // Позиция счётчика монет в HUD
+                                endY: hudCoinY
                             }]);
                             
                             setTimeout(() => {
