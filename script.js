@@ -307,8 +307,8 @@ const LevelSelect = ({ onBack, onSelectLevel, unlockedLevels }) => {
                 {levels.slice(0, 20).map(level => {
                     const unlocked = level.id <= unlockedLevels;
                     return (
-                        <div 
-                            key={level.id} 
+                        <div
+                            key={level.id}
                             className={`level-card ${!unlocked ? 'locked' : ''}`}
                             onClick={() => unlocked && onSelectLevel(level.id)}
                         >
@@ -324,7 +324,7 @@ const LevelSelect = ({ onBack, onSelectLevel, unlockedLevels }) => {
                     );
                 })}
             </div>
-            <button className="back-btn" onClick={onBack}>НАЗАД</button>
+            <button className="back-btn" onClick={onBack}>В МЕНЮ</button>
         </div>
     );
 };
@@ -332,21 +332,9 @@ const LevelSelect = ({ onBack, onSelectLevel, unlockedLevels }) => {
 // ========== МАГАЗИН ==========
 const Shop = ({ money, inventory, equippedPet, buyItem, onClose, onEquipPet }) => {
     const [activeTab, setActiveTab] = useState('weapons');
-    const [curtainState, setCurtainState] = useState('opening');
-
-    useEffect(() => {
-        setCurtainState('opening');
-        const timer = setTimeout(() => {
-            setCurtainState('open');
-        }, 500);
-        return () => clearTimeout(timer);
-    }, []);
 
     const handleClose = () => {
-        setCurtainState('closing');
-        setTimeout(() => {
-            onClose();
-        }, 500);
+        onClose();
     };
     
     const shopItems = {
@@ -404,9 +392,7 @@ const Shop = ({ money, inventory, equippedPet, buyItem, onClose, onEquipPet }) =
     const currentItems = shopItems[activeTab] || [];
 
     return (
-        <div className={`shop-overlay ${curtainState}`}>
-            <div className="shop-curtain shop-curtain-left" />
-            <div className="shop-curtain shop-curtain-right" />
+        <div className="shop-overlay">
             <button className="shop-close-btn" onClick={handleClose}>✕</button>
             
             <div className="shop-header">
