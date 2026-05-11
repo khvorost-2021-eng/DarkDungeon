@@ -114,24 +114,46 @@ const Coin = ({ startX, startY, endX, endY, onComplete }) => {
 // ========== ЗАСТАВКА (ИСПРАВЛЕННАЯ) ==========
 const IntroScreen = ({ onComplete }) => {
     const [stage, setStage] = useState('start');
+    const isVisible = useRef(true);
+    const timeouts = useRef([]);
+
     useEffect(() => {
+        const handleVisibilityChange = () => {
+            isVisible.current = !document.hidden;
+        };
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+    }, []);
+
+    useEffect(() => {
+        const wait = (ms) => new Promise(r => {
+            const t = setTimeout(r, ms);
+            timeouts.current.push(t);
+        });
+
         const sequence = async () => {
-            await new Promise(r => setTimeout(r, 100));
+            await wait(100);
+            if (!isVisible.current) await wait(500);
             setStage('merge');
-            await new Promise(r => setTimeout(r, 500));
+            await wait(500);
+            if (!isVisible.current) await wait(500);
             setStage('burst');
-            await new Promise(r => setTimeout(r, 200));
+            await wait(200);
+            if (!isVisible.current) await wait(500);
             setStage('open');
-            await new Promise(r => setTimeout(r, 400));
+            await wait(400);
+            if (!isVisible.current) await wait(500);
             setStage('open-complete');
-            await new Promise(r => setTimeout(r, 300));
+            await wait(300);
             onComplete();
         };
         sequence();
+
+        return () => timeouts.current.forEach(clearTimeout);
     }, [onComplete]);
     return (
         <div className={`intro-screen ${stage}`}>
-            <div className={`intro-bg ${stage === 'burst' || stage === 'open' || stage === 'open-complete' ? 'show' : ''}`} />
+            <div className="intro-blood-bg" />
             <div className="intro-text-container">
                 <div className="intro-text-left">DARK</div>
                 <div className="intro-text-right">DUNGEON</div>
