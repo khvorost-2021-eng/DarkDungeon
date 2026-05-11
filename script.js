@@ -354,6 +354,18 @@ const LevelSelect = ({ onBack, onSelectLevel, unlockedLevels }) => {
 // ========== МАГАЗИН ==========
 const Shop = ({ money, inventory, equippedPet, buyItem, onClose, onEquipPet }) => {
     const [activeTab, setActiveTab] = useState('weapons');
+    const [curtainState, setCurtainState] = useState('open');
+
+    useEffect(() => {
+        setCurtainState('open');
+    }, []);
+
+    const handleClose = () => {
+        setCurtainState('closing');
+        setTimeout(() => {
+            onClose();
+        }, 600);
+    };
     
     const shopItems = {
         weapons: [
@@ -408,8 +420,10 @@ const Shop = ({ money, inventory, equippedPet, buyItem, onClose, onEquipPet }) =
     const currentItems = shopItems[activeTab] || [];
 
     return (
-        <div className="shop-overlay">
-            <button className="shop-close-btn" onClick={onClose}>✕</button>
+        <div className={`shop-overlay ${curtainState}`}>
+            <div className="shop-curtain shop-curtain-left" />
+            <div className="shop-curtain shop-curtain-right" />
+            <button className="shop-close-btn" onClick={handleClose}>✕</button>
             
             <div className="shop-header">
                 <div className="shop-title-area">
@@ -502,9 +516,22 @@ const DeathScreen = ({ onRestart, isShaking }) => (
     </>
 );
 
+// ========== ЭКРАН ПОБЕДЫ ==========
+const VictoryScreen = ({ onNextLevel, onMenu, level, coinsEarned }) => (
+    <div className="victory-screen">
+        <div className="victory-text">ПОБЕДА!</div>
+        <div className="victory-stats">
+            Уровень {level} пройден<br />
+            Заработано: {coinsEarned} 🪙
+        </div>
+        <button className="victory-btn" onClick={onNextLevel}>СЛЕДУЮЩИЙ УРОВЕНЬ</button>
+        <button className="victory-btn" onClick={onMenu} style={{ marginTop: '20px' }}>В МЕНЮ</button>
+    </div>
+);
+
 // ========== ИГРОВОЙ МИР ==========
-const GameWorld = ({ 
-    player, pet, enemies, playerSkinClass, petSkinClass, 
+const GameWorld = ({
+    player, pet, enemies, playerSkinClass, petSkinClass, equippedPet,
     isAttacking, playerHpVisible, enemyHpVisible,
     shards, bloodEffects, coins, removeShard, removeCoin,
     gameState, onOpenShop, onExitToMenu, currentMap
@@ -575,9 +602,11 @@ const GameWorld = ({
                     {isAttacking && <div className="slash" />}
                 </div>
 
-                <div className="char" style={{ left: pet.x, top: pet.y }}>
-                    <div className={`pet-${petSkinClass}`} />
-                </div>
+                {equippedPet && equippedPet !== 'none' && (
+                    <div className="char" style={{ left: pet.x, top: pet.y }}>
+                        <div className={`pet-${petSkinClass}`} />
+                    </div>
+                )}
 
                 {enemies.map(en => (
                     <div key={en.id} className="char" style={{ left: en.x, top: en.y }}>
@@ -610,6 +639,7 @@ const Game = () => {
     const [playerHpVisible, setPlayerHpVisible] = useState(false);
     const [enemyHpVisible, setEnemyHpVisible] = useState({});
     const [isShaking, setIsShaking] = useState(false);
+    const [coinsEarned, setCoinsEarned] = useState(0);
 
     // Используем useState вместо useRef для позиций (фикс движения)
     const [player, setPlayer] = useState({ x: 90, y: 90, hp: 100, maxHp: 100, dmg: 40, money: 200, shield: 0 });
@@ -655,6 +685,7 @@ const Game = () => {
         const levelData = getLevelData(levelId);
         setCurrentMap(levelData.map);
         setCurrentLevel(levelId);
+        setCoinsEarned(0);
         
         // Устанавливаем позицию игрока
         setPlayer(prev => ({
@@ -684,6 +715,9 @@ const Game = () => {
         
         setEnemies(newEnemies);
         setPet({ x: levelData.playerStart.x - 30, y: levelData.playerStart.y });
+        setShards([]);
+        setBloodEffects([]);
+        setCoins([]);
     };
 
     const getPatrolTarget = useCallback((map) => {
@@ -713,19 +747,20 @@ const Game = () => {
                             setShards(s => [...s, { id: generateId(), x: en.x, y: en.y }]);
                             setBloodEffects(b => [...b, { id: generateId(), x: en.x, y: en.y }]);
                             
-                            // Монеты
+                            // Монеты - летят к счётчику (HUD)
                             const coinId = generateId();
                             setCoins(c => [...c, {
                                 id: coinId,
                                 startX: en.x,
                                 startY: en.y,
-                                endX: player.x,
-                                endY: player.y - 50
+                                endX: 60, // Позиция счётчика монет в HUD
+                                endY: 40
                             }]);
                             
                             setTimeout(() => {
                                 setMoney(m => m + 50);
                                 setPlayer(p => ({ ...p, money: p.money + 50 }));
+                                setCoinsEarned(c => c + 50);
                             }, 600);
                             
                             return null; // Удаляем врага
@@ -738,6 +773,20 @@ const Game = () => {
             });
             
             setIsAttacking(false);
+            
+            // Проверка победы - все враги убиты
+            setEnemies(currentEnemies => {
+                if (currentEnemies.length === 0 || currentEnemies.every(e => e === null)) {
+                    setTimeout(() => {
+                        setGameState('victory');
+                        if (gameLoopRef.current) {
+                            clearInterval(gameLoopRef.current);
+                            gameLoopRef.current = null;
+                        }
+                    }, 500);
+                }
+                return currentEnemies;
+            });
         }, 200);
     }, [isAttacking, gameState, player.x, player.y, player.dmg, showEnemyHpBar]);
 
@@ -881,20 +930,22 @@ const Game = () => {
                             }
                         }
                     } else {
-                        // Патрулирование
+                        // Патрулирование - враги всегда двигаются
                         newEn.state = 'idle';
                         newEn.isAttacking = false;
-                        
+
+                        // Всегда устанавливаем цель патрулирования
                         if (!newEn.patrolTarget || Math.sqrt((newEn.x - newEn.patrolTarget.x)**2 + (newEn.y - newEn.patrolTarget.y)**2) < 30) {
                             newEn.patrolTarget = getPatrolTarget(currentMap);
                         }
-                        
+
+                        // Движение к цели патрулирования
                         if (newEn.patrolTarget) {
                             const pdx = newEn.patrolTarget.x - newEn.x;
                             const pdy = newEn.patrolTarget.y - newEn.y;
                             const pdist = Math.sqrt(pdx*pdx + pdy*pdy);
                             if (pdist > 0) {
-                                const patrolSpeed = (newEn.speed || 1.8) * 0.6;
+                                const patrolSpeed = (newEn.speed || 1.8) * 0.5;
                                 const vx = (pdx / pdist) * patrolSpeed;
                                 const vy = (pdy / pdist) * patrolSpeed;
                                 if (canMoveTo(newEn.x + vx, newEn.y + vy, currentMap)) {
@@ -961,6 +1012,18 @@ const Game = () => {
         }
     };
 
+    const handleNextLevel = () => {
+        const nextLevel = currentLevel + 1;
+        if (nextLevel > unlockedLevels) {
+            setUnlockedLevels(nextLevel);
+        }
+        handleStartLevel(nextLevel);
+    };
+
+    const handleVictoryToMenu = () => {
+        setGameState('menu');
+    };
+
     return (
         <div id="viewport" className={isShaking ? 'screen-shake' : ''}>
             {gameState === 'intro' && (
@@ -1000,13 +1063,23 @@ const Game = () => {
                 />
             )}
 
+            {gameState === 'victory' && (
+                <VictoryScreen 
+                    onNextLevel={handleNextLevel}
+                    onMenu={handleVictoryToMenu}
+                    level={currentLevel}
+                    coinsEarned={coinsEarned}
+                />
+            )}
+
             {gameState === 'playing' && (
-                <GameWorld 
+                <GameWorld
                     player={player}
                     pet={pet}
                     enemies={enemies}
                     playerSkinClass={playerSkinClass}
                     petSkinClass={getPetClass()}
+                    equippedPet={equippedPet}
                     isAttacking={isAttacking}
                     playerHpVisible={playerHpVisible}
                     enemyHpVisible={enemyHpVisible}
