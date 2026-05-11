@@ -1,0 +1,7 @@
+services:
+  - type: static
+    name: dark-dungeon-game
+    runtime: static
+    buildCommand: echo "Static site - no build needed"
+    staticPublishPath: .
+    pullRequestPreviewsEnabled: true
