@@ -1,18 +1,512 @@
-const { useState, useEffect, useRef, useCallback } = React;
-
-const BIG_MAP = [
-    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-    [1,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-    [1,0,1,1,0,1,0,1,1,1,1,1,1,1,1,0,1,1,0,1],
-    [1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,1],
-    [1,1,1,1,1,1,1,1,1,0,1,0,1,1,1,1,0,1,0,1],
-    [1,0,0,0,0,0,0,0,1,0,0,0,1,0,0,0,0,1,0,1],
-    [1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,0,1],
-    [1,0,0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,1],
-    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-];
+const { useState, useEffect, useRef, useCallback, useReducer } = React;
 
 const generateId = () => Math.random().toString(36).substr(2, 9);
+
+// ========== 20 УРОВНЕЙ С КАРТАМИ ==========
+const LEVELS_DATA = [
+    // Уровень 1 - Простое подземелье
+    {
+        id: 1,
+        name: 'Подземелье',
+        map: [
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+            [1,0,0,0,0,0,0,1,0,0,0,0,0,0,1],
+            [1,0,1,1,1,1,0,1,0,1,1,1,1,0,1],
+            [1,0,1,0,0,0,0,0,0,0,0,0,1,0,1],
+            [1,0,1,0,1,1,1,1,1,1,1,0,1,0,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+        ],
+        playerStart: { x: 90, y: 90 },
+        enemies: [
+            { x: 400, y: 90 },
+            { x: 700, y: 300 }
+        ]
+    },
+    // Уровень 2 - Лабиринт
+    {
+        id: 2,
+        name: 'Лабиринт',
+        map: [
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+            [1,0,0,0,1,0,0,0,0,0,1,0,0,0,1],
+            [1,0,1,0,1,0,1,1,1,0,1,0,1,0,1],
+            [1,0,1,0,0,0,0,0,0,0,0,0,1,0,1],
+            [1,0,1,1,1,1,1,0,1,1,1,1,1,0,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+        ],
+        playerStart: { x: 90, y: 90 },
+        enemies: [
+            { x: 400, y: 200 },
+            { x: 700, y: 90 },
+            { x: 700, y: 300 }
+        ]
+    },
+    // Уровень 3 - Зал с колоннами
+    {
+        id: 3,
+        name: 'Колонны',
+        map: [
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+            [1,0,0,0,0,1,0,0,0,1,0,0,0,0,1],
+            [1,0,1,1,0,0,0,1,0,0,0,1,1,0,1],
+            [1,0,0,0,0,1,0,0,0,1,0,0,0,0,1],
+            [1,0,1,1,0,0,0,1,0,0,0,1,1,0,1],
+            [1,0,0,0,0,1,0,0,0,1,0,0,0,0,1],
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+        ],
+        playerStart: { x: 90, y: 90 },
+        enemies: [
+            { x: 400, y: 150 },
+            { x: 600, y: 250 },
+            { x: 400, y: 250 }
+        ]
+    },
+    // Уровень 4 - Спираль
+    {
+        id: 4,
+        name: 'Спираль',
+        map: [
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,0,1,1,1,1,1,1,1,1,1,1,1,0,1],
+            [1,0,1,0,0,0,0,0,0,0,0,0,1,0,1],
+            [1,0,1,0,1,1,1,0,1,1,1,0,1,0,1],
+            [1,0,0,0,1,0,0,0,0,0,1,0,0,0,1],
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+        ],
+        playerStart: { x: 90, y: 90 },
+        enemies: [
+            { x: 500, y: 200 },
+            { x: 750, y: 300 },
+            { x: 500, y: 300 }
+        ]
+    },
+    // Уровень 5 - Крест
+    {
+        id: 5,
+        name: 'Крест',
+        map: [
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,0,1,1,1,0,1,1,1,1,1,0,1,1,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,1,1,1,1,0,1,1,1,1,1,0,1,1,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+        ],
+        playerStart: { x: 90, y: 90 },
+        enemies: [
+            { x: 400, y: 150 },
+            { x: 600, y: 150 },
+            { x: 500, y: 300 },
+            { x: 750, y: 300 }
+        ]
+    },
+    // Уровень 6 - Туннели
+    {
+        id: 6,
+        name: 'Туннели',
+        map: [
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+            [1,0,1,0,0,0,0,1,0,0,0,0,1,0,1],
+            [1,0,1,0,1,1,0,1,0,1,1,0,1,0,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,0,1,0,1,1,0,1,0,1,1,0,1,0,1],
+            [1,0,1,0,0,0,0,1,0,0,0,0,1,0,1],
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+        ],
+        playerStart: { x: 90, y: 90 },
+        enemies: [
+            { x: 300, y: 150 },
+            { x: 600, y: 150 },
+            { x: 300, y: 300 },
+            { x: 600, y: 300 }
+        ]
+    },
+    // Уровень 7 - Змейка
+    {
+        id: 7,
+        name: 'Змейка',
+        map: [
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+            [1,0,0,0,0,0,1,0,0,0,1,0,0,0,1],
+            [1,1,1,1,1,0,1,0,1,0,1,0,1,1,1],
+            [1,0,0,0,0,0,0,0,1,0,0,0,0,0,1],
+            [1,1,1,1,1,0,1,0,1,0,1,1,1,1,1],
+            [1,0,0,0,0,0,1,0,0,0,0,0,0,0,1],
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+        ],
+        playerStart: { x: 90, y: 90 },
+        enemies: [
+            { x: 400, y: 200 },
+            { x: 600, y: 200 },
+            { x: 800, y: 200 },
+            { x: 500, y: 300 }
+        ]
+    },
+    // Уровень 8 - Клетка
+    {
+        id: 8,
+        name: 'Клетка',
+        map: [
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+            [1,0,0,0,1,0,0,0,1,0,0,0,1,0,1],
+            [1,0,1,0,0,0,1,0,0,0,1,0,0,0,1],
+            [1,0,0,0,1,0,0,0,1,0,0,0,1,0,1],
+            [1,0,1,0,0,0,1,0,0,0,1,0,0,0,1],
+            [1,0,0,0,1,0,0,0,1,0,0,0,1,0,1],
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+        ],
+        playerStart: { x: 90, y: 90 },
+        enemies: [
+            { x: 350, y: 150 },
+            { x: 550, y: 150 },
+            { x: 750, y: 150 },
+            { x: 450, y: 300 },
+            { x: 650, y: 300 }
+        ]
+    },
+    // Уровень 9 - Двойной лабиринт
+    {
+        id: 9,
+        name: 'Двойной лабиринт',
+        map: [
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+            [1,0,0,0,0,0,0,0,1,0,0,0,0,0,1],
+            [1,0,1,1,1,1,1,0,1,0,1,1,1,0,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,0,1,1,1,1,1,0,1,0,1,1,1,0,1],
+            [1,0,0,0,0,0,0,0,1,0,0,0,0,0,1],
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+        ],
+        playerStart: { x: 90, y: 90 },
+        enemies: [
+            { x: 400, y: 150 },
+            { x: 800, y: 150 },
+            { x: 400, y: 300 },
+            { x: 800, y: 300 },
+            { x: 600, y: 225 }
+        ]
+    },
+    // Уровень 10 - Кольцо
+    {
+        id: 10,
+        name: 'Кольцо',
+        map: [
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,0,1,1,1,1,1,0,1,1,1,1,1,0,1],
+            [1,0,1,0,0,0,0,0,0,0,0,0,1,0,1],
+            [1,0,1,0,1,1,1,1,1,1,1,0,1,0,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+        ],
+        playerStart: { x: 90, y: 90 },
+        enemies: [
+            { x: 400, y: 200 },
+            { x: 700, y: 200 },
+            { x: 550, y: 100 },
+            { x: 550, y: 320 },
+            { x: 850, y: 320 }
+        ]
+    },
+    // Уровень 11 - Волна
+    {
+        id: 11,
+        name: 'Волна',
+        map: [
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,1,0,1,1,1,0,1,1,1,0,1,1,0,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,0,1,1,1,0,1,1,1,0,1,1,1,0,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+        ],
+        playerStart: { x: 90, y: 90 },
+        enemies: [
+            { x: 300, y: 150 },
+            { x: 500, y: 150 },
+            { x: 700, y: 150 },
+            { x: 900, y: 150 },
+            { x: 400, y: 300 },
+            { x: 800, y: 300 }
+        ]
+    },
+    // Уровень 12 - Коридоры
+    {
+        id: 12,
+        name: 'Коридоры',
+        map: [
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+            [1,0,1,0,0,0,1,0,0,0,1,0,0,0,1],
+            [1,0,1,0,1,0,1,0,1,0,1,0,1,0,1],
+            [1,0,0,0,1,0,0,0,1,0,0,0,1,0,1],
+            [1,0,1,0,1,0,1,0,1,0,1,0,1,0,1],
+            [1,0,1,0,0,0,1,0,0,0,1,0,0,0,1],
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+        ],
+        playerStart: { x: 90, y: 90 },
+        enemies: [
+            { x: 250, y: 150 },
+            { x: 450, y: 150 },
+            { x: 650, y: 150 },
+            { x: 850, y: 150 },
+            { x: 350, y: 300 },
+            { x: 550, y: 300 },
+            { x: 750, y: 300 }
+        ]
+    },
+    // Уровень 13 - Крестообразный
+    {
+        id: 13,
+        name: 'Крестообразный',
+        map: [
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,0,1,1,1,1,1,0,1,1,1,1,1,0,1],
+            [1,0,1,0,0,0,0,0,0,0,0,0,1,0,1],
+            [1,0,1,1,1,1,1,0,1,1,1,1,1,0,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+        ],
+        playerStart: { x: 90, y: 90 },
+        enemies: [
+            { x: 350, y: 150 },
+            { x: 550, y: 150 },
+            { x: 750, y: 150 },
+            { x: 350, y: 300 },
+            { x: 550, y: 300 },
+            { x: 750, y: 300 },
+            { x: 550, y: 225 }
+        ]
+    },
+    // Уровень 14 - Паутина
+    {
+        id: 14,
+        name: 'Паутина',
+        map: [
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+            [1,0,0,0,1,0,0,0,1,0,0,0,1,0,1],
+            [1,0,1,0,0,0,1,0,0,0,1,0,0,0,1],
+            [1,0,0,0,1,0,0,0,1,0,0,0,1,0,1],
+            [1,0,1,0,0,0,1,0,0,0,1,0,0,0,1],
+            [1,0,0,0,1,0,0,0,1,0,0,0,1,0,1],
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+        ],
+        playerStart: { x: 90, y: 90 },
+        enemies: [
+            { x: 300, y: 100 },
+            { x: 600, y: 100 },
+            { x: 900, y: 100 },
+            { x: 300, y: 300 },
+            { x: 600, y: 300 },
+            { x: 900, y: 300 },
+            { x: 450, y: 200 },
+            { x: 750, y: 200 }
+        ]
+    },
+    // Уровень 15 - Гнездо
+    {
+        id: 15,
+        name: 'Гнездо',
+        map: [
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,0,1,1,0,1,1,1,1,1,0,1,1,0,1],
+            [1,0,1,0,0,0,0,0,0,0,0,0,1,0,1],
+            [1,0,1,1,0,1,1,0,1,1,0,1,1,0,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+        ],
+        playerStart: { x: 90, y: 90 },
+        enemies: [
+            { x: 400, y: 150 },
+            { x: 600, y: 150 },
+            { x: 800, y: 150 },
+            { x: 400, y: 300 },
+            { x: 600, y: 300 },
+            { x: 800, y: 300 },
+            { x: 600, y: 225 },
+            { x: 700, y: 225 }
+        ]
+    },
+    // Уровень 16 - Круги
+    {
+        id: 16,
+        name: 'Круги',
+        map: [
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,0,1,1,1,1,0,1,1,1,0,1,1,0,1],
+            [1,0,1,0,0,0,0,0,0,0,0,0,1,0,1],
+            [1,0,1,1,1,1,0,1,1,1,0,1,1,0,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+        ],
+        playerStart: { x: 90, y: 90 },
+        enemies: [
+            { x: 350, y: 150 },
+            { x: 550, y: 150 },
+            { x: 750, y: 150 },
+            { x: 950, y: 150 },
+            { x: 450, y: 300 },
+            { x: 650, y: 300 },
+            { x: 850, y: 300 },
+            { x: 600, y: 200 },
+            { x: 600, y: 250 }
+        ]
+    },
+    // Уровень 17 - Зигзаг
+    {
+        id: 17,
+        name: 'Зигзаг',
+        map: [
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+            [1,0,0,0,1,0,0,0,1,0,0,0,1,0,1],
+            [1,0,1,0,0,0,1,0,0,0,1,0,0,0,1],
+            [1,0,0,0,1,0,0,0,1,0,0,0,1,0,1],
+            [1,0,1,0,0,0,1,0,0,0,1,0,0,0,1],
+            [1,0,0,0,1,0,0,0,1,0,0,0,1,0,1],
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+        ],
+        playerStart: { x: 90, y: 90 },
+        enemies: [
+            { x: 250, y: 100 },
+            { x: 500, y: 100 },
+            { x: 750, y: 100 },
+            { x: 350, y: 225 },
+            { x: 600, y: 225 },
+            { x: 850, y: 225 },
+            { x: 250, y: 320 },
+            { x: 500, y: 320 },
+            { x: 750, y: 320 }
+        ]
+    },
+    // Уровень 18 - Кольцевой
+    {
+        id: 18,
+        name: 'Кольцевой',
+        map: [
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,0,1,1,1,1,1,1,1,1,1,1,1,0,1],
+            [1,0,1,0,0,0,0,0,0,0,0,0,1,0,1],
+            [1,0,1,0,1,1,1,1,1,1,1,0,1,0,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+        ],
+        playerStart: { x: 90, y: 90 },
+        enemies: [
+            { x: 400, y: 150 },
+            { x: 600, y: 150 },
+            { x: 800, y: 150 },
+            { x: 400, y: 300 },
+            { x: 600, y: 300 },
+            { x: 800, y: 300 },
+            { x: 600, y: 225 },
+            { x: 500, y: 225 },
+            { x: 700, y: 225 },
+            { x: 900, y: 225 }
+        ]
+    },
+    // Уровень 19 - Лабиринт смерти
+    {
+        id: 19,
+        name: 'Лабиринт смерти',
+        map: [
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+            [1,0,0,0,0,0,1,0,0,0,0,0,0,0,1],
+            [1,0,1,0,1,0,1,0,1,1,1,0,1,0,1],
+            [1,0,1,0,1,0,0,0,0,0,0,0,1,0,1],
+            [1,0,1,0,1,1,1,1,1,0,1,1,1,0,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+        ],
+        playerStart: { x: 90, y: 90 },
+        enemies: [
+            { x: 300, y: 150 },
+            { x: 500, y: 150 },
+            { x: 700, y: 150 },
+            { x: 900, y: 150 },
+            { x: 400, y: 300 },
+            { x: 600, y: 300 },
+            { x: 800, y: 300 },
+            { x: 600, y: 225 },
+            { x: 500, y: 225 },
+            { x: 700, y: 225 },
+            { x: 350, y: 225 }
+        ]
+    },
+    // Уровень 20 - Финальная арена
+    {
+        id: 20,
+        name: 'Финальная арена',
+        map: [
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,0,1,1,1,0,1,1,1,0,1,1,1,0,1],
+            [1,0,1,0,0,0,0,0,0,0,0,0,1,0,1],
+            [1,0,1,1,1,0,1,1,1,0,1,1,1,0,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+        ],
+        playerStart: { x: 90, y: 90 },
+        enemies: [
+            { x: 300, y: 150 },
+            { x: 500, y: 150 },
+            { x: 700, y: 150 },
+            { x: 900, y: 150 },
+            { x: 400, y: 300 },
+            { x: 600, y: 300 },
+            { x: 800, y: 300 },
+            { x: 600, y: 225 },
+            { x: 500, y: 225 },
+            { x: 700, y: 225 },
+            { x: 400, y: 225 },
+            { x: 800, y: 225 }
+        ]
+    }
+];
+
+// ========== ФОРМУЛЫ СЛОЖНОСТИ ДЛЯ УРОВНЕЙ 21-100 ==========
+const calculateLevelParams = (levelId) => {
+    // Формулы:
+    // Враги: уровень 1 = 2, каждый следующий +0.5 (округлять вверх)
+    // HP врагов: 80 + (уровень * 20)
+    // Скорость врагов: 1.2 + (уровень * 0.1)
+    // Урон врагов: 2 + (уровень * 0.5)
+    // Монеты: 3 + (уровень * 2)
+    
+    const enemyCount = Math.ceil(2 + (levelId - 1) * 0.5);
+    const enemyHp = 80 + (levelId * 20);
+    const enemySpeed = 1.2 + (levelId * 0.1);
+    const enemyDamage = 2 + (levelId * 0.5);
+    const coinCount = 3 + (levelId * 2);
+    
+    return {
+        id: levelId,
+        name: `Уровень ${levelId}`,
+        enemyCount,
+        enemyHp,
+        enemySpeed,
+        enemyDamage,
+        coinCount,
+        // Используем карту 20 уровня с увеличенной сложностью
+        map: LEVELS_DATA[19].map,
+        playerStart: { x: 90, y: 90 }
+    };
+};
+
+// Получить данные уровня
+const getLevelData = (levelId) => {
+    if (levelId <= 20) {
+        return LEVELS_DATA[levelId - 1];
+    }
+    return calculateLevelParams(levelId);
+};
 
 // ========== КОМПОНЕНТЫ ==========
 
@@ -29,7 +523,7 @@ const HPBar = ({ hp, maxHp, isVisible }) => {
     );
 };
 
-// Осколки врага - исправленные, появляются от позиции смерти
+// Осколки врага
 const EnemyShards = ({ x, y, onComplete }) => {
     const [shards, setShards] = useState([]);
 
@@ -62,7 +556,7 @@ const EnemyShards = ({ x, y, onComplete }) => {
                             top: y,
                             width: shard.size,
                             height: shard.size,
-                            animation: `shard-fly-2 0.7s ease-out forwards`,
+                            animation: `shard-fly 0.7s ease-out forwards`,
                             ['--dx']: `${dx}px`,
                             ['--dy']: `${dy}px`,
                             ['--rot']: `${shard.rot}deg`
@@ -71,7 +565,7 @@ const EnemyShards = ({ x, y, onComplete }) => {
                 );
             })}
             <style>{`
-                @keyframes shard-fly-2 {
+                @keyframes shard-fly {
                     0% { transform: translate(-50%, -50%) rotate(0deg) scale(1); opacity: 1; }
                     100% { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) rotate(var(--rot)) scale(0.3); opacity: 0; }
                 }
@@ -110,7 +604,7 @@ const BloodParticles = ({ x, y }) => {
                             position: 'absolute',
                             left: x,
                             top: y,
-                            animation: `blood-fly-2 0.4s ease-out ${p.delay}s forwards`,
+                            animation: `blood-fly 0.4s ease-out ${p.delay}s forwards`,
                             ['--dx']: `${dx}px`,
                             ['--dy']: `${dy}px`
                         }}
@@ -118,7 +612,7 @@ const BloodParticles = ({ x, y }) => {
                 );
             })}
             <style>{`
-                @keyframes blood-fly-2 {
+                @keyframes blood-fly {
                     0% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
                     100% { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(0.2); opacity: 0; }
                 }
@@ -127,7 +621,7 @@ const BloodParticles = ({ x, y }) => {
     );
 };
 
-// Монета - летит к игроку
+// Монета
 const Coin = ({ startX, startY, endX, endY, onComplete }) => {
     const [pos, setPos] = useState({ x: startX, y: startY });
 
@@ -170,21 +664,16 @@ const Coin = ({ startX, startY, endX, endY, onComplete }) => {
     );
 };
 
-// ========== НОВАЯ ЗАСТАВКА ==========
+// ========== ЗАСТАВКА ==========
 const IntroScreen = ({ onComplete }) => {
     const [stage, setStage] = useState('showing');
 
     useEffect(() => {
         const sequence = async () => {
-            // 1. Показываем название (2 секунды)
             await new Promise(r => setTimeout(r, 2000));
             setStage('fading');
-            
-            // 2. Затухание названия
             await new Promise(r => setTimeout(r, 800));
             setStage('opening');
-            
-            // 3. Открытие штор
             await new Promise(r => setTimeout(r, 1200));
             onComplete();
         };
@@ -216,25 +705,18 @@ const MainMenu = ({ onPlay, onShop }) => (
     </div>
 );
 
-// ========== ВЫБОР УРОВНЕЙ (ВСЕ 9 УРОВНЕЙ) ==========
+// ========== ВЫБОР УРОВНЕЙ (100 УРОВНЕЙ) ==========
 const LevelSelect = ({ onBack, onSelectLevel, unlockedLevels }) => {
-    const levels = [
-        { id: 1, name: 'Подземелье', desc: 'Начало пути' },
-        { id: 2, name: 'Тёмные туннели', desc: 'Первые враги' },
-        { id: 3, name: 'Заброшенный зал', desc: 'Опасная зона' },
-        { id: 4, name: 'Кристальные пещеры', desc: 'Магия и тьма' },
-        { id: 5, name: 'Логово стража', desc: 'Мини-босс' },
-        { id: 6, name: 'Адские глубины', desc: 'Лава и огонь' },
-        { id: 7, name: 'Зал проклятых', desc: 'Нежить пробуждается' },
-        { id: 8, name: 'Тронная зала', desc: 'Перед финалом' },
-        { id: 9, name: 'Логово Тьмы', desc: 'Финальный босс' },
-    ];
+    const levels = Array.from({ length: 100 }, (_, i) => ({
+        id: i + 1,
+        name: i < 20 ? LEVELS_DATA[i]?.name || `Уровень ${i + 1}` : `Уровень ${i + 1}`,
+    }));
 
     return (
         <div className="levels-screen">
             <div className="levels-title">ВЫБЕРИТЕ УРОВЕНЬ</div>
             <div className="levels-grid">
-                {levels.map(level => {
+                {levels.slice(0, 20).map(level => {
                     const unlocked = level.id <= unlockedLevels;
                     return (
                         <div 
@@ -259,8 +741,8 @@ const LevelSelect = ({ onBack, onSelectLevel, unlockedLevels }) => {
     );
 };
 
-// ========== МАГАЗИН (ПОЛНОСТЬЮ ПЕРЕДЕЛАННЫЙ) ==========
-const Shop = ({ money, inventory, buyItem, onClose }) => {
+// ========== МАГАЗИН ==========
+const Shop = ({ money, inventory, equippedPet, buyItem, onClose, onEquipPet }) => {
     const [activeTab, setActiveTab] = useState('weapons');
     
     const shopItems = {
@@ -289,13 +771,12 @@ const Shop = ({ money, inventory, buyItem, onClose }) => {
             { id: 'dragon-heart', name: 'Сердце дракона', price: 1500, desc: 'Вампиризм + крит + скорость', rarity: 'legendary', icon: '🐉' },
         ],
         pets: [
-            { id: 'wolf-pet', name: 'Волк', price: 200, desc: 'Атакует врагов', rarity: 'rare', icon: '🐺' },
-            { id: 'raven-pet', name: 'Ворон', price: 300, desc: 'Собирает монеты', rarity: 'epic', icon: '🦅' },
-            { id: 'dragon-pet', name: 'Дракончик', price: 800, desc: 'Огненное дыхание', rarity: 'legendary', icon: '🐲' },
+            { id: 'wolf-pet', name: 'Волк', price: 200, desc: 'Атакует врагов', rarity: 'rare', icon: '🐺', type: 'wolf' },
+            { id: 'raven-pet', name: 'Ворон', price: 300, desc: 'Собирает монеты', rarity: 'epic', icon: '🦅', type: 'raven' },
+            { id: 'dragon-pet', name: 'Дракончик', price: 800, desc: 'Огненное дыхание', rarity: 'legendary', icon: '🐲', type: 'dragon' },
         ]
     };
 
-    const getRarityClass = (rarity) => `rarity-${rarity}`;
     const getRarityColor = (rarity) => {
         const colors = {
             common: '#9e9e9e',
@@ -306,10 +787,20 @@ const Shop = ({ money, inventory, buyItem, onClose }) => {
         return colors[rarity] || '#9e9e9e';
     };
 
+    const handleBuy = (item) => {
+        if (item.type) {
+            // Это питомец - экипируем сразу
+            onEquipPet(item.type);
+        }
+        buyItem(item.id, item.price);
+    };
+
     const currentItems = shopItems[activeTab] || [];
 
     return (
         <div className="shop-overlay">
+            <button className="shop-close-btn" onClick={onClose}>✕</button>
+            
             <div className="shop-header">
                 <div className="shop-title-area">
                     <span className="shop-icon">🏪</span>
@@ -330,6 +821,7 @@ const Shop = ({ money, inventory, buyItem, onClose }) => {
                 <div className="shop-items-grid">
                     {currentItems.map(item => {
                         const owned = inventory.includes(item.id);
+                        const equipped = equippedPet === item.type;
                         const canAfford = money >= item.price;
                         return (
                             <div 
@@ -339,15 +831,15 @@ const Shop = ({ money, inventory, buyItem, onClose }) => {
                             >
                                 <div className="shop-item-icon">{item.icon}</div>
                                 <div className="shop-item-name">{item.name}</div>
-                                <div className="shop-item-rarity {getRarityClass(item.rarity)}">{item.rarity}</div>
+                                <div className={`shop-item-rarity rarity-${item.rarity}`}>{item.rarity}</div>
                                 <div className="shop-item-desc">{item.desc}</div>
                                 <div className="shop-item-price">{item.price} 🪙</div>
                                 <button 
                                     className={`shop-buy-btn ${owned ? 'owned' : ''}`}
-                                    onClick={() => buyItem(item.id, item.price)}
+                                    onClick={() => handleBuy(item)}
                                     disabled={!canAfford || owned}
                                 >
-                                    {owned ? 'КУПЛЕНО' : canAfford ? 'КУПИТЬ' : 'НЕДОСТАТОЧНО'}
+                                    {equipped ? 'ЭКИПИРОВАН' : owned ? 'КУПЛЕНО' : canAfford ? 'КУПИТЬ' : 'НЕДОСТАТОЧНО'}
                                 </button>
                             </div>
                         );
@@ -372,10 +864,14 @@ const Shop = ({ money, inventory, buyItem, onClose }) => {
                             })
                         )}
                     </div>
+                    {equippedPet && (
+                        <div style={{marginTop: '15px', padding: '10px', background: 'rgba(139,0,0,0.2)', borderRadius: '6px', border: '1px solid #8b0000'}}>
+                            <div style={{fontSize: '11px', color: '#888', marginBottom: '5px'}}>ТЕКУЩИЙ ПИТОМЕЦ:</div>
+                            <div style={{color: '#d4af37'}}>🐾 {equippedPet === 'wolf' ? 'Волк' : equippedPet === 'raven' ? 'Ворон' : equippedPet === 'dragon' ? 'Дракончик' : 'Нет'}</div>
+                        </div>
+                    )}
                 </div>
             </div>
-
-            <button className="shop-exit-btn" onClick={onClose}>ВЫЙТИ</button>
         </div>
     );
 };
@@ -401,19 +897,32 @@ const GameWorld = ({
     player, pet, enemies, playerSkinClass, petSkinClass, 
     isAttacking, playerHpVisible, enemyHpVisible,
     shards, bloodEffects, coins, removeShard, removeCoin,
-    gameState
+    gameState, onOpenShop, onExitToMenu, currentMap
 }) => {
     if (gameState !== 'playing') return null;
+
+    // Используем forceUpdate для обновления позиции
+    const [, forceUpdate] = useReducer(x => x + 1, 0);
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            forceUpdate();
+        }, 16);
+        return () => clearInterval(interval);
+    }, []);
 
     return (
         <>
             <div className="hud">
-                <div>❤️ {Math.max(0, Math.floor(player.current.hp))} | 🪙 {player.current.money || 0}</div>
+                <div>❤️ {Math.max(0, Math.floor(player.hp))} | 🪙 {player.money || 0}</div>
                 <div className="hud-stats">
-                    ⚔️ {player.current.dmg} | 🛡️ {player.current.shield ? '60%' : '0%'}
+                    ⚔️ {player.dmg} | 🛡️ {player.shield > 0 ? Math.round(player.shield * 100) + '%' : '0%'}
                 </div>
             </div>
-            <button className="btn-open-shop" onClick={() => {}}>МАГАЗИН</button>
+            <div className="game-buttons">
+                <button className="btn-open-shop" onClick={onOpenShop}>МАГАЗИН</button>
+                <button className="btn-exit-menu" onClick={onExitToMenu}>МЕНЮ</button>
+            </div>
             <div className="fog" />
 
             {shards.map(shard => (
@@ -441,26 +950,26 @@ const GameWorld = ({
             ))}
 
             <div id="game-world" style={{ 
-                transform: `translate(${-player.current.x + window.innerWidth/2}px, ${-player.current.y + window.innerHeight/2}px)` 
+                transform: `translate(${-player.x + window.innerWidth/2}px, ${-player.y + window.innerHeight/2}px)` 
             }}>
-                {BIG_MAP.map((row, y) => row.map((tile, x) => (
+                {currentMap.map((row, y) => row.map((tile, x) => (
                     tile === 1 && <div key={`${x}-${y}`} className="tile wall" style={{ left: x*60, top: y*60 }} />
                 )))}
 
-                <div className="char" style={{ left: player.current.x, top: player.current.y }}>
+                <div className="char" style={{ left: player.x, top: player.y }}>
                     <div className={`skin ${playerSkinClass}`}>
                         <div className="eye left"/>
                         <div className="eye right"/>
                     </div>
-                    <HPBar hp={player.current.hp} maxHp={player.current.maxHp} isVisible={playerHpVisible} />
+                    <HPBar hp={player.hp} maxHp={player.maxHp} isVisible={playerHpVisible} />
                     {isAttacking && <div className="slash" />}
                 </div>
 
-                <div className="char" style={{ left: pet.current.x, top: pet.current.y }}>
-                    <div className={`pet-skin ${petSkinClass}`} />
+                <div className="char" style={{ left: pet.x, top: pet.y }}>
+                    <div className={`pet-${petSkinClass}`} />
                 </div>
 
-                {enemies.current.map(en => (
+                {enemies.map(en => (
                     <div key={en.id} className="char" style={{ left: en.x, top: en.y }}>
                         <div className={`skin enemy-skin ${en.isAttacking ? 'enemy-windup' : ''}`}>
                             <div className="eye left"/>
@@ -480,9 +989,10 @@ const Game = () => {
     const [money, setMoney] = useState(200);
     const [isAttacking, setIsAttacking] = useState(false);
     const [equippedSkin, setEquippedSkin] = useState('blue');
-    const [equippedPet, setEquippedPet] = useState('purple');
+    const [equippedPet, setEquippedPet] = useState('none');
     const [inventory, setInventory] = useState([]);
     const [unlockedLevels, setUnlockedLevels] = useState(1);
+    const [currentLevel, setCurrentLevel] = useState(1);
     
     const [shards, setShards] = useState([]);
     const [bloodEffects, setBloodEffects] = useState([]);
@@ -491,20 +1001,30 @@ const Game = () => {
     const [enemyHpVisible, setEnemyHpVisible] = useState({});
     const [isShaking, setIsShaking] = useState(false);
 
-    const player = useRef({ x: 90, y: 90, hp: 100, maxHp: 100, dmg: 40, money: 200, shield: false });
-    const pet = useRef({ x: 60, y: 90 });
-    const enemies = useRef([
-        { id: 1, x: 400, y: 90, hp: 100, maxHp: 100, state: 'idle', angle: 0, attackCooldown: 0, isAttacking: false, patrolTarget: null },
-        { id: 2, x: 800, y: 300, hp: 100, maxHp: 100, state: 'idle', angle: 0, attackCooldown: 0, isAttacking: false, patrolTarget: null }
-    ]);
+    // Используем useState вместо useRef для позиций (фикс движения)
+    const [player, setPlayer] = useState({ x: 90, y: 90, hp: 100, maxHp: 100, dmg: 40, money: 200, shield: 0 });
+    const [pet, setPet] = useState({ x: 60, y: 90 });
+    const [enemies, setEnemies] = useState([]);
+    const [currentMap, setCurrentMap] = useState(LEVELS_DATA[0].map);
+    
     const keys = useRef({});
     const playerHpTimer = useRef(null);
     const enemyHpTimers = useRef({});
+    const gameLoopRef = useRef(null);
 
-    const canMoveTo = (nx, ny) => {
+    // Формулы сложности
+    const calculateEnemyStats = (levelId) => {
+        return {
+            hp: 80 + (levelId * 20),
+            speed: 1.2 + (levelId * 0.1),
+            damage: 2 + (levelId * 0.5)
+        };
+    };
+
+    const canMoveTo = (nx, ny, map) => {
         const p = 15;
         const pts = [{x:nx-p, y:ny-p}, {x:nx+p, y:ny-p}, {x:nx-p, y:ny+p}, {x:nx+p, y:ny+p}];
-        return !pts.some(pt => BIG_MAP[Math.floor(pt.y/60)]?.[Math.floor(pt.x/60)] === 1);
+        return !pts.some(pt => map[Math.floor(pt.y/60)]?.[Math.floor(pt.x/60)] === 1);
     };
 
     const showPlayerHpBar = useCallback(() => {
@@ -521,9 +1041,44 @@ const Game = () => {
         }, 2500);
     }, []);
 
-    const getPatrolTarget = useCallback(() => {
+    const initLevel = (levelId) => {
+        const levelData = getLevelData(levelId);
+        setCurrentMap(levelData.map);
+        setCurrentLevel(levelId);
+        
+        // Устанавливаем позицию игрока
+        setPlayer(prev => ({
+            ...prev,
+            x: levelData.playerStart.x,
+            y: levelData.playerStart.y
+        }));
+        
+        // Создаём врагов
+        const stats = calculateEnemyStats(levelId);
+        const enemyPositions = levelData.enemies || [];
+        
+        const newEnemies = enemyPositions.map((pos, index) => ({
+            id: index + 1,
+            x: pos.x,
+            y: pos.y,
+            hp: stats.hp,
+            maxHp: stats.hp,
+            state: 'idle',
+            angle: 0,
+            attackCooldown: 0,
+            isAttacking: false,
+            patrolTarget: null,
+            damage: stats.damage,
+            speed: stats.speed
+        }));
+        
+        setEnemies(newEnemies);
+        setPet({ x: levelData.playerStart.x - 30, y: levelData.playerStart.y });
+    };
+
+    const getPatrolTarget = useCallback((map) => {
         const emptyTiles = [];
-        BIG_MAP.forEach((row, y) => {
+        map.forEach((row, y) => {
             row.forEach((tile, x) => {
                 if (tile === 0) emptyTiles.push({ x: x * 60 + 30, y: y * 60 + 30 });
             });
@@ -536,51 +1091,53 @@ const Game = () => {
         setIsAttacking(true);
         
         setTimeout(() => {
-            enemies.current.forEach(en => {
-                const d = Math.sqrt((en.x - player.current.x)**2 + (en.y - player.current.y)**2);
-                if (d < 90) { 
-                    en.hp -= player.current.dmg;
-                    showEnemyHpBar(en.id);
-                    
-                    if (en.hp <= 0) {
-                        // Осколки и кровь
-                        setShards(prev => [...prev, { id: generateId(), x: en.x, y: en.y }]);
-                        setBloodEffects(prev => [...prev, { id: generateId(), x: en.x, y: en.y }]);
+            setEnemies(prevEnemies => {
+                return prevEnemies.map(en => {
+                    const d = Math.sqrt((en.x - player.x)**2 + (en.y - player.y)**2);
+                    if (d < 90) {
+                        const newHp = en.hp - player.dmg;
+                        showEnemyHpBar(en.id);
                         
-                        // Монеты - улетают к игроку
-                        const coinId = generateId();
-                        setCoins(prev => [...prev, {
-                            id: coinId,
-                            startX: en.x,
-                            startY: en.y,
-                            endX: player.current.x,
-                            endY: player.current.y - 50
-                        }]);
+                        if (newHp <= 0) {
+                            // Враг умер - создаём эффекты
+                            setShards(s => [...s, { id: generateId(), x: en.x, y: en.y }]);
+                            setBloodEffects(b => [...b, { id: generateId(), x: en.x, y: en.y }]);
+                            
+                            // Монеты
+                            const coinId = generateId();
+                            setCoins(c => [...c, {
+                                id: coinId,
+                                startX: en.x,
+                                startY: en.y,
+                                endX: player.x,
+                                endY: player.y - 50
+                            }]);
+                            
+                            setTimeout(() => {
+                                setMoney(m => m + 50);
+                                setPlayer(p => ({ ...p, money: p.money + 50 }));
+                            }, 600);
+                            
+                            return null; // Удаляем врага
+                        }
                         
-                        // Добавляем деньги
-                        setTimeout(() => {
-                            setMoney(m => m + 50);
-                            player.current.money = (player.current.money || 0) + 50;
-                        }, 600);
+                        return { ...en, hp: newHp };
                     }
-                }
+                    return en;
+                }).filter(Boolean);
             });
-            enemies.current = enemies.current.filter(en => en.hp > 0);
+            
             setIsAttacking(false);
         }, 200);
-    }, [isAttacking, gameState, showEnemyHpBar]);
+    }, [isAttacking, gameState, player.x, player.y, player.dmg, showEnemyHpBar]);
 
     const restartGame = useCallback(() => {
-        player.current = { 
+        setPlayer({ 
             x: 90, y: 90, hp: 100, maxHp: 100, 
             dmg: 40 + (inventory.includes('dark-sword') ? 50 : inventory.includes('steel-sword') ? 30 : inventory.includes('iron-sword') ? 15 : 0),
             money: money,
             shield: inventory.includes('void-shield') ? 0.6 : inventory.includes('plate-armor') ? 0.4 : inventory.includes('chain-mail') ? 0.25 : inventory.includes('leather-armor') ? 0.1 : 0
-        };
-        enemies.current = [
-            { id: 1, x: 400, y: 90, hp: 100, maxHp: 100, state: 'idle', angle: 0, attackCooldown: 0, isAttacking: false, patrolTarget: null },
-            { id: 2, x: 800, y: 300, hp: 100, maxHp: 100, state: 'idle', angle: 0, attackCooldown: 0, isAttacking: false, patrolTarget: null }
-        ];
+        });
         setGameState('menu');
         setShards([]);
         setBloodEffects([]);
@@ -588,23 +1145,31 @@ const Game = () => {
         setIsShaking(false);
         setPlayerHpVisible(false);
         setEnemyHpVisible({});
+        setEnemies([]);
     }, [inventory, money]);
 
     const buyItem = useCallback((itemId, price) => {
         if (money >= price && !inventory.includes(itemId)) {
             setMoney(m => m - price);
-            player.current.money = money - price;
+            setPlayer(p => ({ ...p, money: p.money - price }));
             setInventory(prev => [...prev, itemId]);
             
             // Применяем эффекты
-            if (itemId === 'iron-sword') player.current.dmg += 15;
-            if (itemId === 'steel-sword') player.current.dmg += 30;
-            if (itemId === 'dark-sword') player.current.dmg += 50;
-            if (itemId === 'excalibur') player.current.dmg += 100;
-            if (itemId === 'leather-armor') player.current.shield = 0.1;
-            if (itemId === 'chain-mail') player.current.shield = 0.25;
-            if (itemId === 'plate-armor') player.current.shield = 0.4;
-            if (itemId === 'void-shield') player.current.shield = 0.6;
+            setPlayer(p => {
+                let newDmg = p.dmg;
+                let newShield = p.shield;
+                
+                if (itemId === 'iron-sword') newDmg += 15;
+                if (itemId === 'steel-sword') newDmg += 30;
+                if (itemId === 'dark-sword') newDmg += 50;
+                if (itemId === 'excalibur') newDmg += 100;
+                if (itemId === 'leather-armor') newShield = 0.1;
+                if (itemId === 'chain-mail') newShield = 0.25;
+                if (itemId === 'plate-armor') newShield = 0.4;
+                if (itemId === 'void-shield') newShield = 0.6;
+                
+                return { ...p, dmg: newDmg, shield: newShield };
+            });
         }
     }, [money, inventory]);
 
@@ -616,12 +1181,19 @@ const Game = () => {
         setCoins(prev => prev.filter(c => c.id !== coinId));
     }, []);
 
-    // Игровой цикл
+    // Игровой цикл - основной фикс движения
     useEffect(() => {
-        const loop = setInterval(() => {
-            if (gameState !== 'playing') return;
+        if (gameState !== 'playing') {
+            if (gameLoopRef.current) {
+                clearInterval(gameLoopRef.current);
+                gameLoopRef.current = null;
+            }
+            return;
+        }
 
-            if (player.current.hp <= 0) {
+        gameLoopRef.current = setInterval(() => {
+            // Проверка смерти
+            if (player.hp <= 0) {
                 setIsShaking(true);
                 setTimeout(() => setGameState('dead'), 800);
                 return;
@@ -629,94 +1201,155 @@ const Game = () => {
 
             // Движение игрока
             const s = 4;
-            let nx = player.current.x, ny = player.current.y;
-            if (keys.current['ArrowUp'] || keys.current['KeyW']) ny -= s;
-            if (keys.current['ArrowDown'] || keys.current['KeyS']) ny += s;
-            if (keys.current['ArrowLeft'] || keys.current['KeyA']) nx -= s;
-            if (keys.current['ArrowRight'] || keys.current['KeyD']) nx += s;
-            if (canMoveTo(nx, player.current.y)) player.current.x = nx;
-            if (canMoveTo(player.current.x, ny)) player.current.y = ny;
-
-            // ИИ Врагов
-            enemies.current.forEach(en => {
-                if (en.attackCooldown > 0) en.attackCooldown -= 16;
-
-                const dx = player.current.x - en.x;
-                const dy = player.current.y - en.y;
-                const dist = Math.sqrt(dx*dx + dy*dy);
-
-                if (dist < 250) {
-                    en.state = 'chase';
-                    
-                    if (dist < 50 && en.attackCooldown <= 0 && !en.isAttacking) {
-                        en.isAttacking = true;
-                        
-                        setTimeout(() => {
-                            if (en.hp > 0 && player.current.hp > 0) {
-                                let damage = 10;
-                                if (player.current.shield) damage *= (1 - player.current.shield);
-                                player.current.hp -= damage;
-                                showPlayerHpBar();
-                            }
-                            en.isAttacking = false;
-                            en.attackCooldown = 1200;
-                        }, 350);
-                    }
-                    
-                    if (!en.isAttacking) {
-                        const vx = (dx / dist) * 1.8;
-                        const vy = (dy / dist) * 1.8;
-                        if (canMoveTo(en.x + vx, en.y + vy)) { 
-                            en.x += vx; 
-                            en.y += vy; 
-                        }
-                    }
-                } else {
-                    en.state = 'idle';
-                    en.isAttacking = false;
-                    
-                    if (!en.patrolTarget || Math.sqrt((en.x - en.patrolTarget.x)**2 + (en.y - en.patrolTarget.y)**2) < 30) {
-                        en.patrolTarget = getPatrolTarget();
-                    }
-                    
-                    if (en.patrolTarget) {
-                        const pdx = en.patrolTarget.x - en.x;
-                        const pdy = en.patrolTarget.y - en.y;
-                        const pdist = Math.sqrt(pdx*pdx + pdy*pdy);
-                        if (pdist > 0) {
-                            const vx = (pdx / pdist) * 1.2;
-                            const vy = (pdy / pdist) * 1.2;
-                            if (canMoveTo(en.x + vx, en.y + vy)) {
-                                en.x += vx;
-                                en.y += vy;
-                            }
-                        }
-                    }
-                }
+            setPlayer(prev => {
+                let nx = prev.x, ny = prev.y;
+                if (keys.current['ArrowUp'] || keys.current['KeyW']) ny -= s;
+                if (keys.current['ArrowDown'] || keys.current['KeyS']) ny += s;
+                if (keys.current['ArrowLeft'] || keys.current['KeyA']) nx -= s;
+                if (keys.current['ArrowRight'] || keys.current['KeyD']) nx += s;
+                
+                const newX = canMoveTo(nx, prev.y, currentMap) ? nx : prev.x;
+                const newY = canMoveTo(prev.x, ny, currentMap) ? ny : prev.y;
+                
+                return { ...prev, x: newX, y: newY };
             });
 
-            // Питомец
-            pet.current.x += (player.current.x - 40 - pet.current.x) * 0.05;
-            pet.current.y += (player.current.y - 30 - pet.current.y) * 0.05;
+            // Движение питомца
+            setPet(prev => ({
+                x: prev.x + (player.x - 40 - prev.x) * 0.05,
+                y: prev.y + (player.y - 30 - prev.y) * 0.05
+            }));
+
+            // ИИ Врагов
+            setEnemies(prevEnemies => {
+                return prevEnemies.map(en => {
+                    let newEn = { ...en };
+                    
+                    if (newEn.attackCooldown > 0) newEn.attackCooldown -= 16;
+
+                    const dx = player.x - newEn.x;
+                    const dy = player.y - newEn.y;
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+
+                    if (dist < 250) {
+                        newEn.state = 'chase';
+                        
+                        // Атака
+                        if (dist < 50 && newEn.attackCooldown <= 0 && !newEn.isAttacking) {
+                            newEn.isAttacking = true;
+                            
+                            setTimeout(() => {
+                                setPlayer(p => {
+                                    if (p.hp > 0) {
+                                        let damage = newEn.damage || 10;
+                                        if (p.shield) damage *= (1 - p.shield);
+                                        const newHp = Math.max(0, p.hp - damage);
+                                        if (newHp <= 0) {
+                                            setIsShaking(true);
+                                            setTimeout(() => setGameState('dead'), 800);
+                                        }
+                                        showPlayerHpBar();
+                                        return { ...p, hp: newHp };
+                                    }
+                                    return p;
+                                });
+                                
+                                setEnemies(ens => ens.map(e => 
+                                    e.id === newEn.id ? { ...e, isAttacking: false, attackCooldown: 1200 } : e
+                                ));
+                            }, 350);
+                        }
+                        
+                        // Движение к игроку
+                        if (!newEn.isAttacking) {
+                            const speed = newEn.speed || 1.8;
+                            const vx = (dx / dist) * speed;
+                            const vy = (dy / dist) * speed;
+                            if (canMoveTo(newEn.x + vx, newEn.y + vy, currentMap)) { 
+                                newEn.x += vx; 
+                                newEn.y += vy; 
+                            }
+                        }
+                    } else {
+                        // Патрулирование
+                        newEn.state = 'idle';
+                        newEn.isAttacking = false;
+                        
+                        if (!newEn.patrolTarget || Math.sqrt((newEn.x - newEn.patrolTarget.x)**2 + (newEn.y - newEn.patrolTarget.y)**2) < 30) {
+                            newEn.patrolTarget = getPatrolTarget(currentMap);
+                        }
+                        
+                        if (newEn.patrolTarget) {
+                            const pdx = newEn.patrolTarget.x - newEn.x;
+                            const pdy = newEn.patrolTarget.y - newEn.y;
+                            const pdist = Math.sqrt(pdx*pdx + pdy*pdy);
+                            if (pdist > 0) {
+                                const patrolSpeed = (newEn.speed || 1.8) * 0.6;
+                                const vx = (pdx / pdist) * patrolSpeed;
+                                const vy = (pdy / pdist) * patrolSpeed;
+                                if (canMoveTo(newEn.x + vx, newEn.y + vy, currentMap)) {
+                                    newEn.x += vx;
+                                    newEn.y += vy;
+                                }
+                            }
+                        }
+                    }
+                    
+                    return newEn;
+                });
+            });
 
         }, 16);
 
+        return () => {
+            if (gameLoopRef.current) {
+                clearInterval(gameLoopRef.current);
+                gameLoopRef.current = null;
+            }
+        };
+    }, [gameState, player.x, player.y, player.hp, currentMap, showPlayerHpBar, getPatrolTarget]);
+
+    // Keyboard handlers
+    useEffect(() => {
         const kd = (e) => { 
             keys.current[e.code] = true; 
             if (e.code === 'Space') handleAttack(); 
         };
         const ku = (e) => keys.current[e.code] = false;
+        
         window.addEventListener('keydown', kd);
         window.addEventListener('keyup', ku);
+        
         return () => { 
-            clearInterval(loop); 
             window.removeEventListener('keydown', kd); 
             window.removeEventListener('keyup', ku); 
         };
-    }, [gameState, handleAttack, showPlayerHpBar, getPatrolTarget]);
+    }, [handleAttack]);
 
     const playerSkinClass = equippedSkin === 'dark' ? 'player-skin-dark' : 'player-skin';
-    const petSkinClass = equippedPet === 'shadow' ? 'pet-skin-shadow' : '';
+    
+    // Определяем класс питомца
+    const getPetClass = () => {
+        switch(equippedPet) {
+            case 'wolf': return 'wolf';
+            case 'raven': return 'raven';
+            case 'dragon': return 'dragon';
+            default: return 'wolf'; // По умолчанию волк
+        }
+    };
+
+    const handleStartLevel = (levelId) => {
+        initLevel(levelId);
+        setGameState('playing');
+    };
+
+    const handleExitToMenu = () => {
+        setGameState('menu');
+        if (gameLoopRef.current) {
+            clearInterval(gameLoopRef.current);
+            gameLoopRef.current = null;
+        }
+    };
 
     return (
         <div id="viewport" className={isShaking ? 'screen-shake' : ''}>
@@ -734,9 +1367,7 @@ const Game = () => {
             {gameState === 'levels' && (
                 <LevelSelect 
                     onBack={() => setGameState('menu')}
-                    onSelectLevel={(levelId) => {
-                        if (levelId === 1) setGameState('playing');
-                    }}
+                    onSelectLevel={handleStartLevel}
                     unlockedLevels={unlockedLevels}
                 />
             )}
@@ -745,8 +1376,10 @@ const Game = () => {
                 <Shop 
                     money={money}
                     inventory={inventory}
+                    equippedPet={equippedPet}
                     buyItem={buyItem}
                     onClose={() => setGameState('menu')}
+                    onEquipPet={setEquippedPet}
                 />
             )}
 
@@ -763,7 +1396,7 @@ const Game = () => {
                     pet={pet}
                     enemies={enemies}
                     playerSkinClass={playerSkinClass}
-                    petSkinClass={petSkinClass}
+                    petSkinClass={getPetClass()}
                     isAttacking={isAttacking}
                     playerHpVisible={playerHpVisible}
                     enemyHpVisible={enemyHpVisible}
@@ -773,6 +1406,9 @@ const Game = () => {
                     removeShard={removeShard}
                     removeCoin={removeCoin}
                     gameState={gameState}
+                    onOpenShop={() => setGameState('shop')}
+                    onExitToMenu={handleExitToMenu}
+                    currentMap={currentMap}
                 />
             )}
         </div>
