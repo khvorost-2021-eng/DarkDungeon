@@ -1,6 +1,119 @@
 const { useState, useEffect, useRef, useCallback, useReducer } = React;
 
+// ========== МУЗЫКАЛЬНЫЙ МЕНЕДЖЕР ==========
+const MusicManager = {
+    audioContext: null,
+    isPlaying: false,
+    currentNote: 0,
+    noteInterval: null,
+    
+    // Мрачная минорная гамма для темной атмосферы
+    notes: [65.41, 73.42, 77.78, 82.41, 87.31, 92.50, 98.00, 103.83], // C2, D2, Eb2, E2, F2, Gb2, G2, Ab2
+    
+    init() {
+        if (!this.audioContext) {
+            this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        }
+    },
+    
+    playDarkAmbient() {
+        if (this.isPlaying || !this.audioContext) return;
+        this.isPlaying = true;
+        
+        const playDrone = () => {
+            if (!this.isPlaying) return;
+            
+            // Основной дрон (низкий гул)
+            const osc = this.audioContext.createOscillator();
+            const gain = this.audioContext.createGain();
+            const filter = this.audioContext.createBiquadFilter();
+            
+            osc.type = 'sawtooth';
+            osc.frequency.value = this.notes[Math.floor(Math.random() * this.notes.length)];
+            
+            filter.type = 'lowpass';
+            filter.frequency.value = 200 + Math.random() * 300;
+            
+            gain.gain.setValueAtTime(0, this.audioContext.currentTime);
+            gain.gain.linearRampToValueAtTime(0.08, this.audioContext.currentTime + 2);
+            gain.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 6);
+            
+            osc.connect(filter);
+            filter.connect(gain);
+            gain.connect(this.audioContext.destination);
+            
+            osc.start();
+            osc.stop(this.audioContext.currentTime + 6);
+        };
+        
+        const playDarkPad = () => {
+            if (!this.isPlaying) return;
+            
+            // Пад (фоновый звук)
+            const osc = this.audioContext.createOscillator();
+            const gain = this.audioContext.createGain();
+            const filter = this.audioContext.createBiquadFilter();
+            
+            osc.type = 'sine';
+            osc.frequency.value = this.notes[Math.floor(Math.random() * 4)] * 2; // Октава выше
+            
+            filter.type = 'lowpass';
+            filter.frequency.value = 400;
+            
+            gain.gain.setValueAtTime(0, this.audioContext.currentTime);
+            gain.gain.linearRampToValueAtTime(0.03, this.audioContext.currentTime + 3);
+            gain.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 8);
+            
+            osc.connect(filter);
+            filter.connect(gain);
+            gain.connect(this.audioContext.destination);
+            
+            osc.start();
+            osc.stop(this.audioContext.currentTime + 8);
+        };
+        
+        // Интервалы для создания атмосферы
+        this.noteInterval = setInterval(() => {
+            if (Math.random() > 0.3) playDrone();
+            if (Math.random() > 0.5) playDarkPad();
+        }, 2000);
+        
+        // Начать сразу
+        playDrone();
+        playDarkPad();
+    },
+    
+    stop() {
+        this.isPlaying = false;
+        if (this.noteInterval) {
+            clearInterval(this.noteInterval);
+            this.noteInterval = null;
+        }
+    }
+};
+
 // ========== КОМПОНЕНТЫ ==========
+
+const SpinningSword = ({ weapon }) => {
+    const swordStyles = {
+        stick: { blade: '#8B4513', guard: '#654321', handle: '#4a3728' },
+        steel: { blade: '#C0C0C0', guard: '#A0A0A0', handle: '#444444' },
+        dark: { blade: '#2d1b4e', guard: '#1a1a2e', handle: '#0f0f1a' },
+        fire: { blade: '#ff4500', guard: '#8b0000', handle: '#4a0000' },
+        ice: { blade: '#87CEEB', guard: '#4682B4', handle: '#2F4F4F' },
+        excalibur: { blade: '#FFD700', guard: '#DAA520', handle: '#8B7508' }
+    };
+    
+    const style = swordStyles[weapon] || swordStyles.stick;
+    
+    return (
+        <div className="spinning-sword">
+            <div className="sword-blade" style={{ background: `linear-gradient(90deg, ${style.blade} 0%, ${style.blade}dd 50%, ${style.blade} 100%)` }} />
+            <div className="sword-guard" style={{ background: style.guard }} />
+            <div className="sword-handle" style={{ background: style.handle }} />
+        </div>
+    );
+};
 
 const HPBar = ({ hp, maxHp, isVisible }) => {
     const percentage = Math.max(0, (hp / maxHp) * 100);
@@ -522,7 +635,7 @@ const VictoryScreen = ({ onNextLevel, onMenu, level, coinsEarned }) => (
 
 // ========== ИГРОВОЙ МИР ==========
 const GameWorld = ({
-    player, pet, enemies, playerSkinClass, petSkinClass, equippedPet,
+    player, pet, enemies, playerSkinClass, petSkinClass, equippedPet, equippedWeapon,
     isAttacking, playerHpVisible, enemyHpVisible,
     shards, bloodEffects, coins, removeShard, removeCoin,
     gameState, onOpenShop, onExitToMenu, currentMap
@@ -533,10 +646,6 @@ const GameWorld = ({
         onExitToMenu();
     };
 
-    const getSlashClass = () => {
-        const weapon = player.currentWeapon || 'basic';
-        return `slash ${weapon}`;
-    };
 
     // Используем forceUpdate для обновления позиции
     const [, forceUpdate] = useReducer(x => x + 1, 0);
@@ -599,7 +708,7 @@ const GameWorld = ({
                         <div className="eye right"/>
                     </div>
                     <HPBar hp={player.hp} maxHp={player.maxHp} isVisible={playerHpVisible} />
-                    {isAttacking && <div className={getSlashClass()} />}
+                    {isAttacking && <SpinningSword weapon={equippedWeapon} />}
                 </div>
 
                 {equippedPet && equippedPet !== 'none' && (
@@ -629,6 +738,7 @@ const Game = () => {
     const [isAttacking, setIsAttacking] = useState(false);
     const [equippedSkin, setEquippedSkin] = useState('blue');
     const [equippedPet, setEquippedPet] = useState('none');
+    const [equippedWeapon, setEquippedWeapon] = useState('stick'); // Начальное оружие - палка
     const [inventory, setInventory] = useState([]);
     const [unlockedLevels, setUnlockedLevels] = useState(1);
     const [currentLevel, setCurrentLevel] = useState(1);
@@ -642,7 +752,7 @@ const Game = () => {
     const [coinsEarned, setCoinsEarned] = useState(0);
 
     // Используем useState вместо useRef для позиций (фикс движения)
-    const [player, setPlayer] = useState({ x: 90, y: 90, hp: 100, maxHp: 100, dmg: 40, money: 200, shield: 0, currentWeapon: 'basic' });
+    const [player, setPlayer] = useState({ x: 90, y: 90, hp: 100, maxHp: 100, dmg: 40, money: 200, shield: 0, currentWeapon: 'stick' });
     const [pet, setPet] = useState({ x: 60, y: 90 });
     const [enemies, setEnemies] = useState([]);
     const [currentMap, setCurrentMap] = useState(LEVELS_DATA[0].map);
@@ -1002,6 +1112,20 @@ const Game = () => {
         };
     }, [handleAttack]);
 
+    // Инициализация музыки
+    useEffect(() => {
+        MusicManager.init();
+    }, []);
+    
+    // Управление музыкой при смене состояния игры
+    useEffect(() => {
+        if (gameState === 'playing') {
+            MusicManager.playDarkAmbient();
+        } else {
+            MusicManager.stop();
+        }
+    }, [gameState]);
+
     const playerSkinClass = equippedSkin === 'dark' ? 'player-skin-dark' : 'player-skin';
 
     // Определяем класс питомца
@@ -1108,6 +1232,7 @@ const Game = () => {
                     playerSkinClass={playerSkinClass}
                     petSkinClass={getPetClass()}
                     equippedPet={equippedPet}
+                    equippedWeapon={equippedWeapon}
                     isAttacking={isAttacking}
                     playerHpVisible={playerHpVisible}
                     enemyHpVisible={enemyHpVisible}

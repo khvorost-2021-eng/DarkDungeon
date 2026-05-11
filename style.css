@@ -1065,3 +1065,55 @@ body { margin: 0; background: #0a0a0a; overflow: hidden; font-family: 'Cinzel', 
     transform: translateY(-2px);
     box-shadow: 0 6px 25px rgba(255,0,0,0.5);
 }
+
+/* ========== ВРАЩАЮЩИЙСЯ МЕЧ ========== */
+.spinning-sword {
+    position: absolute;
+    width: 80px;
+    height: 80px;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 25;
+    pointer-events: none;
+    animation: sword-spin 0.4s ease-out forwards;
+}
+
+@keyframes sword-spin {
+    0% { transform: translate(-50%, -50%) rotate(0deg) scale(0.8); opacity: 0.5; }
+    30% { transform: translate(-50%, -50%) rotate(180deg) scale(1); opacity: 1; }
+    100% { transform: translate(-50%, -50%) rotate(720deg) scale(1.2); opacity: 0; }
+}
+
+.sword-blade {
+    position: absolute;
+    width: 12px;
+    height: 60px;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -70%);
+    border-radius: 2px 2px 0 0;
+    box-shadow: 0 0 10px rgba(255,255,255,0.3), inset 0 0 5px rgba(255,255,255,0.2);
+}
+
+.sword-guard {
+    position: absolute;
+    width: 30px;
+    height: 6px;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, 0);
+    border-radius: 2px;
+    box-shadow: 0 0 5px rgba(0,0,0,0.5);
+}
+
+.sword-handle {
+    position: absolute;
+    width: 8px;
+    height: 20px;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, 8px);
+    border-radius: 0 0 3px 3px;
+    box-shadow: 0 0 5px rgba(0,0,0,0.5);
+}
