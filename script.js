@@ -112,7 +112,7 @@ const SFXManager = {
         osc.frequency.setValueAtTime(800, this.audioContext.currentTime);
         osc.frequency.exponentialRampToValueAtTime(400, this.audioContext.currentTime + 0.05);
         
-        gain.gain.setValueAtTime(0.1, this.audioContext.currentTime);
+        gain.gain.setValueAtTime(0.03, this.audioContext.currentTime);
         gain.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.05);
         
         osc.connect(gain);
@@ -138,7 +138,7 @@ const SFXManager = {
         filter.frequency.setValueAtTime(1000, this.audioContext.currentTime);
         filter.frequency.exponentialRampToValueAtTime(200, this.audioContext.currentTime + 0.15);
         
-        gain.gain.setValueAtTime(0.15, this.audioContext.currentTime);
+        gain.gain.setValueAtTime(0.05, this.audioContext.currentTime);
         gain.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.15);
         
         osc.connect(filter);
@@ -162,7 +162,7 @@ const SFXManager = {
             osc.frequency.value = freq;
             
             gain.gain.setValueAtTime(0, now + i * 0.1);
-            gain.gain.linearRampToValueAtTime(0.2, now + i * 0.1 + 0.05);
+            gain.gain.linearRampToValueAtTime(0.08, now + i * 0.1 + 0.05);
             gain.gain.exponentialRampToValueAtTime(0.01, now + i * 0.1 + 0.4);
             
             osc.connect(gain);
@@ -183,7 +183,7 @@ const SFXManager = {
         osc.frequency.setValueAtTime(100, this.audioContext.currentTime);
         osc.frequency.exponentialRampToValueAtTime(20, this.audioContext.currentTime + 1);
         
-        gain.gain.setValueAtTime(0.3, this.audioContext.currentTime);
+        gain.gain.setValueAtTime(0.1, this.audioContext.currentTime);
         gain.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 1);
         
         osc.connect(gain);
@@ -206,7 +206,7 @@ const SFXManager = {
             osc.frequency.value = freq;
             
             gain.gain.setValueAtTime(0, now + i * 0.05);
-            gain.gain.linearRampToValueAtTime(0.15, now + i * 0.05 + 0.02);
+            gain.gain.linearRampToValueAtTime(0.05, now + i * 0.05 + 0.02);
             gain.gain.exponentialRampToValueAtTime(0.01, now + i * 0.05 + 0.2);
             
             osc.connect(gain);
@@ -227,7 +227,7 @@ const SFXManager = {
         osc.frequency.setValueAtTime(150, this.audioContext.currentTime);
         osc.frequency.linearRampToValueAtTime(100, this.audioContext.currentTime + 0.2);
         
-        gain.gain.setValueAtTime(0.1, this.audioContext.currentTime);
+        gain.gain.setValueAtTime(0.03, this.audioContext.currentTime);
         gain.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.2);
         
         osc.connect(gain);
@@ -546,17 +546,62 @@ const WEAPONS = {
 };
 
 // ========== ГЛАВНОЕ МЕНЮ ==========
-const MainMenu = ({ onPlay, onShop }) => (
+const MainMenu = ({ onPlay, onShop, onSettings }) => (
     <div className="main-menu">
         <div className="menu-bg" />
         <div className="menu-title">DARK DUNGEON</div>
         <div className="menu-buttons">
             <button className="menu-btn primary" onClick={() => { SFXManager.playClick(); onPlay(); }}>УРОВНИ</button>
             <button className="menu-btn" onClick={() => { SFXManager.playClick(); onShop(); }}>МАГАЗИН</button>
-            <button className="menu-btn" onClick={() => { SFXManager.playClick(); alert('Профиль — в разработке'); }}>ПРОФИЛЬ</button>
+            <button className="menu-btn" onClick={() => { SFXManager.playClick(); onSettings(); }}>НАСТРОЙКИ</button>
         </div>
     </div>
 );
+
+// ========== НАСТРОЙКИ ==========
+const Settings = ({ playerName, setPlayerName, musicEnabled, setMusicEnabled, onBack }) => {
+    const handleToggleMusic = () => {
+        SFXManager.playClick();
+        const newState = !musicEnabled;
+        setMusicEnabled(newState);
+        if (newState) {
+            MusicManager.playDarkAmbient();
+        } else {
+            MusicManager.stop();
+        }
+    };
+
+    return (
+        <div className="settings-screen">
+            <button className="settings-back-btn" onClick={() => { SFXManager.playClick(); onBack(); }}>◀</button>
+            <div className="settings-title">НАСТРОЙКИ</div>
+            
+            <div className="settings-content">
+                <div className="settings-section">
+                    <label className="settings-label">Имя игрока:</label>
+                    <input 
+                        type="text" 
+                        className="settings-input"
+                        value={playerName}
+                        onChange={(e) => setPlayerName(e.target.value)}
+                        placeholder="Введите имя"
+                        maxLength={20}
+                    />
+                </div>
+
+                <div className="settings-section">
+                    <label className="settings-label">Музыка:</label>
+                    <button 
+                        className={`settings-toggle ${musicEnabled ? 'active' : ''}`}
+                        onClick={handleToggleMusic}
+                    >
+                        {musicEnabled ? 'ВКЛ' : 'ВЫКЛ'}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
 
 // ========== ВЫБОР УРОВНЕЙ (100 УРОВНЕЙ) ==========
 const LevelSelect = ({ onBack, onSelectLevel, unlockedLevels }) => {
@@ -796,7 +841,7 @@ const VictoryScreen = ({ onNextLevel, onMenu, level, coinsEarned }) => (
 
 // ========== ИГРОВОЙ МИР ==========
 const GameWorld = ({
-    player, pet, enemies, playerSkinClass, petSkinClass, equippedPet, equippedWeapon,
+    player, pet, enemies, playerSkinClass, petSkinClass, equippedPet, equippedWeapon, playerName,
     isAttacking, playerHpVisible, enemyHpVisible,
     shards, bloodEffects, coins, removeShard, removeCoin,
     gameState, onOpenShop, onExitToMenu, currentMap
@@ -821,6 +866,7 @@ const GameWorld = ({
     return (
         <>
             <div className="hud">
+                <div className="hud-player-name">👤 {playerName || 'Игрок'}</div>
                 <div>❤️ {Math.max(0, Math.floor(player.hp))} | 🪙 {player.money || 0}</div>
                 <div className="hud-stats">
                     ⚔️ {player.dmg} | 🛡️ {player.shield > 0 ? Math.round(player.shield * 100) + '%' : '0%'}
@@ -903,6 +949,10 @@ const Game = () => {
     const [inventory, setInventory] = useState([]);
     const [unlockedLevels, setUnlockedLevels] = useState(1);
     const [currentLevel, setCurrentLevel] = useState(1);
+    
+    // Настройки
+    const [playerName, setPlayerName] = useState('');
+    const [musicEnabled, setMusicEnabled] = useState(true);
     
     const [shards, setShards] = useState([]);
     const [bloodEffects, setBloodEffects] = useState([]);
@@ -1342,12 +1392,12 @@ const Game = () => {
     
     // Управление музыкой при смене состояния игры
     useEffect(() => {
-        if (gameState === 'playing') {
+        if (gameState === 'playing' && musicEnabled) {
             MusicManager.playDarkAmbient();
         } else {
             MusicManager.stop();
         }
-    }, [gameState]);
+    }, [gameState, musicEnabled]);
 
     const playerSkinClass = equippedSkin === 'dark' ? 'player-skin-dark' : 'player-skin';
 
@@ -1409,6 +1459,17 @@ const Game = () => {
                 <MainMenu
                     onPlay={() => setGameState('levels')}
                     onShop={handleOpenShop}
+                    onSettings={() => setGameState('settings')}
+                />
+            )}
+
+            {gameState === 'settings' && (
+                <Settings
+                    playerName={playerName}
+                    setPlayerName={setPlayerName}
+                    musicEnabled={musicEnabled}
+                    setMusicEnabled={setMusicEnabled}
+                    onBack={() => setGameState('menu')}
                 />
             )}
 
@@ -1458,6 +1519,7 @@ const Game = () => {
                     petSkinClass={getPetClass()}
                     equippedPet={equippedPet}
                     equippedWeapon={equippedWeapon}
+                    playerName={playerName}
                     isAttacking={isAttacking}
                     playerHpVisible={playerHpVisible}
                     enemyHpVisible={enemyHpVisible}
