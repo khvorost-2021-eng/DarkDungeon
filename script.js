@@ -295,35 +295,50 @@ const MainMenu = ({ onPlay, onShop }) => (
 
 // ========== ВЫБОР УРОВНЕЙ (100 УРОВНЕЙ) ==========
 const LevelSelect = ({ onBack, onSelectLevel, unlockedLevels }) => {
+    const [page, setPage] = useState(0);
+    const levelsPerPage = 15; // 5x3 grid
+
     const levels = Array.from({ length: 100 }, (_, i) => ({
         id: i + 1,
         name: i < 20 ? LEVELS_DATA[i]?.name || `Уровень ${i + 1}` : `Уровень ${i + 1}`,
     }));
 
+    const totalPages = Math.ceil(levels.length / levelsPerPage);
+    const startIndex = page * levelsPerPage;
+    const visibleLevels = levels.slice(startIndex, startIndex + levelsPerPage);
+
+    const goPrev = () => setPage(p => Math.max(0, p - 1));
+    const goNext = () => setPage(p => Math.min(totalPages - 1, p + 1));
+
     return (
         <div className="levels-screen">
             <div className="levels-title">ВЫБЕРИТЕ УРОВЕНЬ</div>
-            <div className="levels-grid">
-                {levels.slice(0, 20).map(level => {
-                    const unlocked = level.id <= unlockedLevels;
-                    return (
-                        <div
-                            key={level.id}
-                            className={`level-card ${!unlocked ? 'locked' : ''}`}
-                            onClick={() => unlocked && onSelectLevel(level.id)}
-                        >
-                            {unlocked ? (
-                                <>
-                                    <div className="level-number">{level.id}</div>
-                                    <div className="level-name">{level.name}</div>
-                                </>
-                            ) : (
-                                <div className="level-lock">🔒</div>
-                            )}
-                        </div>
-                    );
-                })}
+            <div className="levels-nav-container">
+                <button className="levels-arrow" onClick={goPrev} disabled={page === 0}>◀</button>
+                <div className="levels-grid">
+                    {visibleLevels.map(level => {
+                        const unlocked = level.id <= unlockedLevels;
+                        return (
+                            <div
+                                key={level.id}
+                                className={`level-card ${!unlocked ? 'locked' : ''}`}
+                                onClick={() => unlocked && onSelectLevel(level.id)}
+                            >
+                                {unlocked ? (
+                                    <>
+                                        <div className="level-number">{level.id}</div>
+                                        <div className="level-name">{level.name}</div>
+                                    </>
+                                ) : (
+                                    <div className="level-lock">🔒</div>
+                                )}
+                            </div>
+                        );
+                    })}
+                </div>
+                <button className="levels-arrow" onClick={goNext} disabled={page === totalPages - 1}>▶</button>
             </div>
+            <div className="levels-page-indicator">{page + 1} / {totalPages}</div>
             <button className="back-btn" onClick={onBack}>В МЕНЮ</button>
         </div>
     );

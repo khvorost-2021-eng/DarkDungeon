@@ -112,12 +112,50 @@ body { margin: 0; background: #0a0a0a; overflow: hidden; font-family: 'Cinzel', 
     text-shadow: 0 0 30px rgba(139,0,0,0.5);
     margin-bottom: 50px;
 }
+.levels-nav-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    width: 100%;
+    max-width: 1300px;
+}
 .levels-grid {
     display: grid;
     grid-template-columns: repeat(5, 1fr);
     gap: 20px;
     max-width: 1100px;
     width: 100%;
+}
+.levels-arrow {
+    width: 50px;
+    height: 50px;
+    background: transparent;
+    border: 2px solid #666;
+    border-radius: 50%;
+    color: #fff;
+    font-size: 20px;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.levels-arrow:hover:not(:disabled) {
+    border-color: #ff0000;
+    color: #ff0000;
+    box-shadow: 0 0 15px rgba(255,0,0,0.3);
+}
+.levels-arrow:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+.levels-page-indicator {
+    font-size: 16px;
+    color: #666;
+    letter-spacing: 3px;
+    margin-top: 20px;
 }
 .level-card {
     aspect-ratio: 1;
