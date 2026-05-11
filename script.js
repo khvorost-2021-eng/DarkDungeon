@@ -363,14 +363,18 @@ const LevelSelect = ({ onBack, onSelectLevel, unlockedLevels }) => {
 // ========== МАГАЗИН ==========
 const Shop = ({ money, inventory, equippedPet, buyItem, onClose, onEquipPet }) => {
     const [activeTab, setActiveTab] = useState('weapons');
-    const [curtainState, setCurtainState] = useState('');
+    const [curtainState, setCurtainState] = useState('opening');
 
     useEffect(() => {
-        setCurtainState('open');
+        setCurtainState('opening');
+        const timer = setTimeout(() => {
+            setCurtainState('open');
+        }, 500);
+        return () => clearTimeout(timer);
     }, []);
 
     const handleClose = () => {
-        setCurtainState('');
+        setCurtainState('closing');
         setTimeout(() => {
             onClose();
         }, 500);
@@ -706,18 +710,18 @@ const Game = () => {
         setCurrentMap(levelData.map);
         setCurrentLevel(levelId);
         setCoinsEarned(0);
-        
+
         // Устанавливаем позицию игрока
         setPlayer(prev => ({
             ...prev,
             x: levelData.playerStart.x,
             y: levelData.playerStart.y
         }));
-        
+
         // Создаём врагов
         const stats = calculateEnemyStats(levelId);
         const enemyPositions = levelData.enemies || [];
-        
+
         const newEnemies = enemyPositions.map((pos, index) => ({
             id: index + 1,
             x: pos.x,
@@ -728,7 +732,7 @@ const Game = () => {
             angle: 0,
             attackCooldown: 0,
             isAttacking: false,
-            patrolTarget: null,
+            patrolTarget: getPatrolTarget(levelData.map),
             damage: stats.damage,
             speed: stats.speed
         }));
@@ -968,7 +972,7 @@ const Game = () => {
                             const pdy = newEn.patrolTarget.y - newEn.y;
                             const pdist = Math.sqrt(pdx*pdx + pdy*pdy);
                             if (pdist > 0) {
-                                const patrolSpeed = (newEn.speed || 1.8) * 0.5;
+                                const patrolSpeed = (newEn.speed || 1.8) * 0.8;
                                 const vx = (pdx / pdist) * patrolSpeed;
                                 const vy = (pdy / pdist) * patrolSpeed;
                                 if (canMoveTo(newEn.x + vx, newEn.y + vy, currentMap)) {
