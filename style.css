@@ -1,13 +1,70 @@
 body { margin: 0; background: #0a0a0a; overflow: hidden; font-family: 'Cinzel', 'Georgia', serif; color: #eee; touch-action: none; }
 #viewport { position: relative; width: 100vw; height: 100vh; overflow: hidden; }
 
-/* ========== ЗАСТАВКА ========== */
+/* ========== ЗАСТАВКА (ИСПРАВЛЕННАЯ) ========== */
 .intro-screen {
     position: fixed;
     inset: 0;
     z-index: 3000;
-    background: #0a0a0a;
+    background: #050505;
     overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.intro-bg {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at center, #1a0000 0%, #050505 70%);
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+.intro-bg.show { opacity: 1; }
+.intro-text-container {
+    display: flex;
+    gap: 0;
+    position: relative;
+    z-index: 10;
+}
+.intro-text-left, .intro-text-right {
+    font-size: 80px;
+    font-weight: bold;
+    letter-spacing: 20px;
+    color: #ff0000;
+    text-shadow: 
+        0 0 30px #ff0000,
+        0 0 60px #8b0000,
+        0 0 100px #4a0000;
+    transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.intro-text-left { transform: translateX(-200px); }
+.intro-text-right { transform: translateX(200px); }
+.intro-screen.merge .intro-text-left { transform: translateX(0); }
+.intro-screen.merge .intro-text-right { transform: translateX(0); }
+.intro-screen.burst .intro-text-left,
+.intro-screen.burst .intro-text-right {
+    transform: scale(1.2);
+    text-shadow: 
+        0 0 50px #ff0000,
+        0 0 100px #8b0000,
+        0 0 150px #ff0000,
+        0 0 200px rgba(255,0,0,0.8);
+}
+.intro-curtain {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 50%;
+    background: #050505;
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 20;
+}
+.intro-curtain-left { left: 0; transform: translateX(-100%); }
+.intro-curtain-right { right: 0; transform: translateX(100%); }
+.intro-screen.open .intro-curtain-left { transform: translateX(0); }
+.intro-screen.open .intro-curtain-right { transform: translateX(0); }
+.intro-screen.open-complete .intro-curtain-left { transform: translateX(-100%); }
+.intro-screen.open-complete .intro-curtain-right { transform: translateX(100%); }
 }
 .intro-blood-bg {
     position: absolute;
