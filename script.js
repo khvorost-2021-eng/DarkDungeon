@@ -81,6 +81,8 @@ const BloodParticles = ({ x, y }) => {
 
 const Coin = ({ startX, startY, endX, endY, onComplete }) => {
     const [pos, setPos] = useState({ x: startX, y: startY });
+    const [isVisible, setIsVisible] = useState(true);
+
     useEffect(() => {
         const duration = 600;
         const startTime = Date.now();
@@ -91,12 +93,19 @@ const Coin = ({ startX, startY, endX, endY, onComplete }) => {
             const x = startX + (endX - startX) * ease;
             const y = startY + (endY - startY) * ease;
             setPos({ x, y });
-            if (progress < 1) requestAnimationFrame(animate);
-            else onComplete();
+            if (progress < 1) {
+                requestAnimationFrame(animate);
+            } else {
+                setIsVisible(false);
+                setTimeout(onComplete, 50);
+            }
         };
         const timer = setTimeout(animate, 100);
         return () => clearTimeout(timer);
     }, [startX, startY, endX, endY, onComplete]);
+
+    if (!isVisible) return null;
+
     return (
         <div className="coin" style={{ position: 'absolute', left: pos.x, top: pos.y, transform: 'translate(-50%, -50%)', zIndex: 200 }} />
     );
@@ -354,17 +363,21 @@ const LevelSelect = ({ onBack, onSelectLevel, unlockedLevels }) => {
 // ========== МАГАЗИН ==========
 const Shop = ({ money, inventory, equippedPet, buyItem, onClose, onEquipPet }) => {
     const [activeTab, setActiveTab] = useState('weapons');
-    const [curtainState, setCurtainState] = useState('open');
+    const [curtainState, setCurtainState] = useState('opening');
 
     useEffect(() => {
-        setCurtainState('open');
+        setCurtainState('opening');
+        const timer = setTimeout(() => {
+            setCurtainState('open');
+        }, 500);
+        return () => clearTimeout(timer);
     }, []);
 
     const handleClose = () => {
         setCurtainState('closing');
         setTimeout(() => {
             onClose();
-        }, 600);
+        }, 500);
     };
     
     const shopItems = {
@@ -988,18 +1001,26 @@ const Game = () => {
     }, [handleAttack]);
 
     const playerSkinClass = equippedSkin === 'dark' ? 'player-skin-dark' : 'player-skin';
-    
+
     // Определяем класс питомца
     const getPetClass = () => {
         switch(equippedPet) {
             case 'wolf': return 'wolf';
             case 'raven': return 'raven';
             case 'dragon': return 'dragon';
-            default: return 'wolf'; // По умолчанию волк
+            default: return ''; // Нет питомца
         }
     };
 
     const handleStartLevel = (levelId) => {
+        // Сбрасываем состояние перед началом уровня
+        setShards([]);
+        setBloodEffects([]);
+        setCoins([]);
+        setPlayerHpVisible(false);
+        setEnemyHpVisible({});
+        setIsShaking(false);
+        setIsAttacking(false);
         initLevel(levelId);
         setGameState('playing');
     };
@@ -1010,6 +1031,10 @@ const Game = () => {
             clearInterval(gameLoopRef.current);
             gameLoopRef.current = null;
         }
+        // Сбрасываем эффекты при выходе в меню
+        setShards([]);
+        setBloodEffects([]);
+        setCoins([]);
     };
 
     const handleNextLevel = () => {
