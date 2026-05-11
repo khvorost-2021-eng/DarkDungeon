@@ -1040,10 +1040,10 @@ const Game = () => {
             hp: stats.hp,
             maxHp: stats.hp,
             state: 'idle',
-            angle: 0,
+            angle: Math.random() * Math.PI * 2, // Случайное начальное направление
             attackCooldown: 0,
             isAttacking: false,
-            patrolTarget: getPatrolTarget(levelData.map),
+            patrolTarget: null,
             damage: stats.damage,
             speed: stats.speed
         }));
@@ -1345,32 +1345,23 @@ const Game = () => {
                         newEn.state = 'patrol';
                         newEn.isAttacking = false;
 
-                        // Устанавливаем новую цель патрулирования если достигли текущей или её нет
-                        const distToTarget = newEn.patrolTarget ? 
-                            Math.sqrt((newEn.x - newEn.patrolTarget.x)**2 + (newEn.y - newEn.patrolTarget.y)**2) : 999;
-                        if (!newEn.patrolTarget || distToTarget < 30) {
-                            newEn.patrolTarget = getPatrolTarget(currentMap);
+                        // Движение в текущем направлении
+                        const patrolSpeed = (newEn.speed || 1.8) * 0.5;
+                        const vx = Math.cos(newEn.angle) * patrolSpeed;
+                        const vy = Math.sin(newEn.angle) * patrolSpeed;
+                        
+                        // Проверяем возможность движения
+                        if (canMoveTo(newEn.x + vx, newEn.y + vy, currentMap)) {
+                            newEn.x += vx;
+                            newEn.y += vy;
+                        } else {
+                            // Если упёрлись в стену - выбираем новое случайное направление
+                            newEn.angle = Math.random() * Math.PI * 2;
                         }
-
-                        // Движение к цели патрулирования
-                        if (newEn.patrolTarget) {
-                            const pdx = newEn.patrolTarget.x - newEn.x;
-                            const pdy = newEn.patrolTarget.y - newEn.y;
-                            const pdist = Math.sqrt(pdx*pdx + pdy*pdy);
-                            if (pdist > 0) {
-                                const patrolSpeed = (newEn.speed || 1.8) * 0.8;
-                                const vx = (pdx / pdist) * patrolSpeed;
-                                const vy = (pdy / pdist) * patrolSpeed;
-                                
-                                // Проверяем возможность движения, если упёрлись в стену - меняем цель
-                                if (canMoveTo(newEn.x + vx, newEn.y + vy, currentMap)) {
-                                    newEn.x += vx;
-                                    newEn.y += vy;
-                                } else {
-                                    // Если не можем двигаться к цели - выбираем новую
-                                    newEn.patrolTarget = getPatrolTarget(currentMap);
-                                }
-                            }
+                        
+                        // Случайно меняем направление каждые ~2 секунды (1/60 шанс на кадр)
+                        if (Math.random() < 0.02) {
+                            newEn.angle = Math.random() * Math.PI * 2;
                         }
                     }
                     
