@@ -111,65 +111,6 @@ const Coin = ({ startX, startY, endX, endY, onComplete }) => {
     );
 };
 
-// ========== ЗАСТАВКА (ИСПРАВЛЕННАЯ) ==========
-const IntroScreen = ({ onComplete }) => {
-    const [stage, setStage] = useState('start');
-    const isVisible = useRef(true);
-    const timeouts = useRef([]);
-
-    useEffect(() => {
-        const handleVisibilityChange = () => {
-            isVisible.current = !document.hidden;
-        };
-        document.addEventListener('visibilitychange', handleVisibilityChange);
-        return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-    }, []);
-
-    useEffect(() => {
-        const wait = (ms) => new Promise(r => {
-            const t = setTimeout(r, ms);
-            timeouts.current.push(t);
-        });
-
-        const sequence = async () => {
-            // Сначала шторки закрываются
-            await wait(100);
-            if (!isVisible.current) await wait(500);
-            setStage('closed');
-            await wait(400);
-            if (!isVisible.current) await wait(500);
-            // Потом текст съезжается
-            setStage('merge');
-            await wait(500);
-            if (!isVisible.current) await wait(500);
-            setStage('burst');
-            await wait(200);
-            if (!isVisible.current) await wait(500);
-            // Шторки открываются
-            setStage('open');
-            await wait(400);
-            if (!isVisible.current) await wait(500);
-            setStage('open-complete');
-            await wait(300);
-            onComplete();
-        };
-        sequence();
-
-        return () => timeouts.current.forEach(clearTimeout);
-    }, [onComplete]);
-    return (
-        <div className={`intro-screen ${stage}`}>
-            <div className="intro-blood-bg" />
-            <div className="intro-text-container">
-                <div className="intro-text-left">DARK</div>
-                <div className="intro-text-right">DUNGEON</div>
-            </div>
-            <div className="intro-curtain intro-curtain-left" />
-            <div className="intro-curtain intro-curtain-right" />
-        </div>
-    );
-};
-
 // ========== 20 УРОВНЕЙ С КАРТАМИ ==========
 const LEVELS_DATA = [
     // Уровень 1 - Простое подземелье
@@ -676,7 +617,7 @@ const GameWorld = ({
 
 // ========== ГЛАВНЫЙ КОМПОНЕНТ ==========
 const Game = () => {
-    const [gameState, setGameState] = useState('intro');
+    const [gameState, setGameState] = useState('menu');
     const [money, setMoney] = useState(200);
     const [isAttacking, setIsAttacking] = useState(false);
     const [equippedSkin, setEquippedSkin] = useState('blue');
@@ -830,6 +771,11 @@ const Game = () => {
             setEnemies(currentEnemies => {
                 if (currentEnemies.length === 0 || currentEnemies.every(e => e === null)) {
                     setTimeout(() => {
+                        // Автоматически разблокируем следующий уровень при победе
+                        const nextLevel = currentLevel + 1;
+                        if (nextLevel > unlockedLevels) {
+                            setUnlockedLevels(nextLevel);
+                        }
                         setGameState('victory');
                         if (gameLoopRef.current) {
                             clearInterval(gameLoopRef.current);
@@ -1054,37 +1000,22 @@ const Game = () => {
         }
     };
 
-    const [transitionTarget, setTransitionTarget] = useState(null);
-
     const handleOpenShop = () => {
-        setTransitionTarget({ type: 'shop' });
-        setGameState('transition');
+        setGameState('shop');
     };
 
     const handleStartLevel = (levelId) => {
-        setTransitionTarget({ type: 'level', levelId });
-        setGameState('transition');
-    };
-
-    const completeTransition = () => {
-        if (transitionTarget) {
-            if (transitionTarget.type === 'level') {
-                // Сбрасываем состояние перед началом уровня
-                setShards([]);
-                setBloodEffects([]);
-                setCoins([]);
-                setPlayerHpVisible(false);
-                setEnemyHpVisible({});
-                setIsShaking(false);
-                setIsAttacking(false);
-                setCurrentLevel(transitionTarget.levelId);
-                initLevel(transitionTarget.levelId);
-                setGameState('playing');
-            } else if (transitionTarget.type === 'shop') {
-                setGameState('shop');
-            }
-            setTransitionTarget(null);
-        }
+        // Сбрасываем состояние перед началом уровня
+        setShards([]);
+        setBloodEffects([]);
+        setCoins([]);
+        setPlayerHpVisible(false);
+        setEnemyHpVisible({});
+        setIsShaking(false);
+        setIsAttacking(false);
+        setCurrentLevel(levelId);
+        initLevel(levelId);
+        setGameState('playing');
     };
 
     const handleExitToMenu = () => {
@@ -1113,10 +1044,6 @@ const Game = () => {
 
     return (
         <div id="viewport" className={isShaking ? 'screen-shake' : ''}>
-            {(gameState === 'intro' || gameState === 'transition') && (
-                <IntroScreen onComplete={gameState === 'transition' ? completeTransition : () => setGameState('menu')} />
-            )}
-
             {gameState === 'menu' && (
                 <MainMenu
                     onPlay={() => setGameState('levels')}
