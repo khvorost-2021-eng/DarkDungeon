@@ -742,13 +742,18 @@ const Game = () => {
                             setBloodEffects(b => [...b, { id: generateId(), x: en.x, y: en.y }]);
                             
                             // Монеты - летят к счётчику (HUD)
+                            // Монеты рендерятся в экранных координатах (вне game-world)
+                            const hudScreenX = 60;
+                            const hudScreenY = 40;
+                            const worldOffsetX = -player.x + window.innerWidth / 2;
+                            const worldOffsetY = -player.y + window.innerHeight / 2;
                             const coinId = generateId();
                             setCoins(c => [...c, {
                                 id: coinId,
-                                startX: en.x,
-                                startY: en.y,
-                                endX: 60, // Позиция счётчика монет в HUD
-                                endY: 40
+                                startX: en.x + worldOffsetX, // Конвертируем мир в экран
+                                startY: en.y + worldOffsetY,
+                                endX: hudScreenX, // HUD в экранных координатах
+                                endY: hudScreenY
                             }]);
                             
                             setTimeout(() => {
