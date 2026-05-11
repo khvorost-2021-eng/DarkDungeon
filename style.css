@@ -102,6 +102,7 @@ body { margin: 0; background: #0a0a0a; overflow: hidden; font-family: 'Cinzel', 
     align-items: center;
     padding: 50px 20px;
     animation: menu-fade-in 0.5s ease;
+    overflow-y: auto;
 }
 .levels-title {
     font-size: 42px;
@@ -187,6 +188,7 @@ body { margin: 0; background: #0a0a0a; overflow: hidden; font-family: 'Cinzel', 
 }
 .back-btn {
     margin-top: 50px;
+    margin-bottom: 30px;
     padding: 15px 45px;
     font-size: 14px;
     font-family: 'Cinzel', 'Georgia', serif;
@@ -197,6 +199,7 @@ body { margin: 0; background: #0a0a0a; overflow: hidden; font-family: 'Cinzel', 
     cursor: pointer;
     transition: all 0.3s;
     letter-spacing: 3px;
+    flex-shrink: 0;
 }
 .back-btn:hover {
     color: #fff;
@@ -214,24 +217,6 @@ body { margin: 0; background: #0a0a0a; overflow: hidden; font-family: 'Cinzel', 
     flex-direction: column;
     overflow: hidden;
 }
-.shop-curtain {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    width: 50%;
-    background: #0a0a0a;
-    transition: transform 0.5s ease-in-out, opacity 0.3s ease-in-out;
-    z-index: 250;
-    pointer-events: none;
-}
-.shop-curtain-left { left: 0; transform: translateX(-100%); opacity: 1; }
-.shop-curtain-right { right: 0; transform: translateX(100%); opacity: 1; }
-.shop-overlay.opening .shop-curtain-left { transform: translateX(0); opacity: 1; }
-.shop-overlay.opening .shop-curtain-right { transform: translateX(0); opacity: 1; }
-.shop-overlay.open .shop-curtain-left { transform: translateX(-100%); opacity: 0; }
-.shop-overlay.open .shop-curtain-right { transform: translateX(100%); opacity: 0; }
-.shop-overlay.closing .shop-curtain-left { transform: translateX(0); opacity: 1; }
-.shop-overlay.closing .shop-curtain-right { transform: translateX(0); opacity: 1; }
 .shop-close-btn {
     position: absolute;
     top: 20px;
