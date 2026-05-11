@@ -1019,7 +1019,21 @@ const Game = () => {
         const stats = calculateEnemyStats(levelId);
         const enemyPositions = levelData.enemies || [];
 
-        const newEnemies = enemyPositions.map((pos, index) => ({
+        // Валидация позиций врагов - проверяем что они не на стенах
+        const validEnemyPositions = enemyPositions.filter(pos => canMoveTo(pos.x, pos.y, levelData.map));
+        
+        // Если после фильтрации осталось мало врагов, генерируем новых на валидных позициях
+        const targetEnemyCount = Math.max(1, validEnemyPositions.length);
+        const finalPositions = [...validEnemyPositions];
+        
+        while (finalPositions.length < targetEnemyCount) {
+            const patrolPos = getPatrolTarget(levelData.map);
+            if (patrolPos && !finalPositions.some(p => Math.abs(p.x - patrolPos.x) < 30 && Math.abs(p.y - patrolPos.y) < 30)) {
+                finalPositions.push(patrolPos);
+            }
+        }
+
+        const newEnemies = finalPositions.map((pos, index) => ({
             id: index + 1,
             x: pos.x,
             y: pos.y,
@@ -1327,12 +1341,14 @@ const Game = () => {
                             }
                         }
                     } else {
-                        // Патрулирование - враги всегда двигаются
-                        newEn.state = 'idle';
+                        // Патрулирование - враги всегда двигаются независимо от игрока
+                        newEn.state = 'patrol';
                         newEn.isAttacking = false;
 
-                        // Всегда устанавливаем цель патрулирования
-                        if (!newEn.patrolTarget || Math.sqrt((newEn.x - newEn.patrolTarget.x)**2 + (newEn.y - newEn.patrolTarget.y)**2) < 30) {
+                        // Устанавливаем новую цель патрулирования если достигли текущей или её нет
+                        const distToTarget = newEn.patrolTarget ? 
+                            Math.sqrt((newEn.x - newEn.patrolTarget.x)**2 + (newEn.y - newEn.patrolTarget.y)**2) : 999;
+                        if (!newEn.patrolTarget || distToTarget < 30) {
                             newEn.patrolTarget = getPatrolTarget(currentMap);
                         }
 
@@ -1345,9 +1361,14 @@ const Game = () => {
                                 const patrolSpeed = (newEn.speed || 1.8) * 0.8;
                                 const vx = (pdx / pdist) * patrolSpeed;
                                 const vy = (pdy / pdist) * patrolSpeed;
+                                
+                                // Проверяем возможность движения, если упёрлись в стену - меняем цель
                                 if (canMoveTo(newEn.x + vx, newEn.y + vy, currentMap)) {
                                     newEn.x += vx;
                                     newEn.y += vy;
+                                } else {
+                                    // Если не можем двигаться к цели - выбираем новую
+                                    newEn.patrolTarget = getPatrolTarget(currentMap);
                                 }
                             }
                         }
