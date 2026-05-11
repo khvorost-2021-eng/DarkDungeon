@@ -312,6 +312,7 @@ const LevelSelect = ({ onBack, onSelectLevel, unlockedLevels }) => {
 
     return (
         <div className="levels-screen">
+            <button className="levels-back-btn" onClick={onBack}>◀</button>
             <div className="levels-title">ВЫБЕРИТЕ УРОВЕНЬ</div>
             <div className="levels-nav-container">
                 <button className="levels-arrow" onClick={goPrev} disabled={page === 0}>◀</button>
@@ -339,7 +340,6 @@ const LevelSelect = ({ onBack, onSelectLevel, unlockedLevels }) => {
                 <button className="levels-arrow" onClick={goNext} disabled={page === totalPages - 1}>▶</button>
             </div>
             <div className="levels-page-indicator">{page + 1} / {totalPages}</div>
-            <button className="back-btn" onClick={onBack}>В МЕНЮ</button>
         </div>
     );
 };
@@ -408,7 +408,7 @@ const Shop = ({ money, inventory, equippedPet, buyItem, onClose, onEquipPet }) =
 
     return (
         <div className="shop-overlay">
-            <button className="shop-close-btn" onClick={handleClose}>✕</button>
+            <button className="shop-close-btn" onClick={handleClose}>◀</button>
             
             <div className="shop-header">
                 <div className="shop-title-area">
