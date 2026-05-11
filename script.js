@@ -749,8 +749,10 @@ const Game = () => {
                             
                             // Монеты - летят к счётчику монет (🪙) в HUD
                             // Монеты рендерятся в экранных координатах (вне game-world)
-                            const hudCoinX = 150; // Позиция 🪙 в HUD (после ❤️)
-                            const hudCoinY = 30;
+                            // HUD: top:20, left:20, padding:15px 25px
+                            // 🪙 находится примерно на x=125, y=35 (первая строка HUD)
+                            const hudCoinX = 125;
+                            const hudCoinY = 35;
                             const worldOffsetX = -player.x + window.innerWidth / 2;
                             const worldOffsetY = -player.y + window.innerHeight / 2;
                             const coinId = generateId();
