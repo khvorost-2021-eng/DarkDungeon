@@ -14,12 +14,19 @@ const DynamicJoystick = ({ onMove }) => {
         if (!joystick || !handle) return;
 
         const handleStart = (e) => {
-            e.preventDefault();
             const touch = e.touches ? e.touches[0] : e;
             
-            // Проверяем, что касание в правой половине экрана
-            if (touch.clientX < window.innerWidth / 2) return;
+            // Проверяем, что касание НЕ на кнопке (приоритет кнопок)
+            if (touch.target.closest('.attack-button') || 
+                touch.target.closest('.btn-abilities') ||
+                touch.target.closest('.abilities-panel')) {
+                return;
+            }
             
+            // Проверяем, что касание в левой половине экрана (для движения)
+            if (touch.clientX > window.innerWidth / 2) return;
+            
+            e.preventDefault();
             isActive.current = true;
             centerX.current = touch.clientX;
             centerY.current = touch.clientY;
@@ -109,12 +116,34 @@ const MobileAttackButton = ({ onAttack }) => {
     );
 };
 
-const MobileControls = ({ onMove, onAttack, isVisible }) => {
+const MobileAbilitiesButton = ({ onToggle, hasItems }) => {
+    if (!hasItems) return null;
+    
+    const handleToggle = useCallback((e) => {
+        e.preventDefault();
+        onToggle();
+    }, [onToggle]);
+    
+    return (
+        <div className="abilities-button-container">
+            <button 
+                className="btn-abilities" 
+                onTouchStart={handleToggle}
+                onMouseDown={handleToggle}
+            >
+                ⚡
+            </button>
+        </div>
+    );
+};
+
+const MobileControls = ({ onMove, onAttack, onToggleAbilities, hasAbilities, isVisible }) => {
     if (!isVisible) return null;
     
     return (
         <div className="mobile-controls">
             <MobileAttackButton onAttack={onAttack} />
+            <MobileAbilitiesButton onToggle={onToggleAbilities} hasItems={hasAbilities} />
             <DynamicJoystick onMove={onMove} />
         </div>
     );
@@ -965,15 +994,16 @@ const GameWorld = ({
         .sort((a, b) => a.order - b.order);
 
 
-    // Используем forceUpdate для обновления позиции
+    // Используем useState вместо useRef для позиций (фикс движения)
     const [, forceUpdate] = useReducer(x => x + 1, 0);
-
-    useEffect(() => {
-        const interval = setInterval(() => {
-            forceUpdate();
-        }, 16);
-        return () => clearInterval(interval);
-    }, []);
+    
+    // Force update для гарантии рендеринга (убрано для оптимизации)
+    // useEffect(() => {
+    //     const interval = setInterval(() => {
+    //         forceUpdate();
+    //     }, 16);
+    //     return () => clearInterval(interval);
+    // }, []);
 
     return (
         <>
@@ -1008,11 +1038,6 @@ const GameWorld = ({
             <div className="game-buttons">
                 <button className="btn-open-shop" onClick={onOpenShop}>МАГАЗИН</button>
                 <button className="btn-exit-menu" onClick={onExitToMenu}>МЕНЮ</button>
-                {isMobile && availableItems.length > 0 && (
-                    <button className="btn-abilities" onClick={() => setAbilitiesOpen(!abilitiesOpen)}>
-                        ⚡
-                    </button>
-                )}
             </div>
             
             {isMobile && abilitiesOpen && (
@@ -1928,10 +1953,9 @@ const Game = () => {
                 });
             });
 
-            // Принудительное обновление для гарантии рендеринга врагов
-            forceUpdate();
+            // Убрано forceUpdate для оптимизации - React сам перерисовывает при изменении state
 
-        }, 16);
+        }, 30); // Увеличено с 16ms до 30ms для оптимизации (30fps достаточно)
 
         return () => {
             if (gameLoopRef.current) {
@@ -2118,6 +2142,8 @@ const Game = () => {
                     <MobileControls 
                         onMove={handleJoystickMove}
                         onAttack={handleMobileAttack}
+                        onToggleAbilities={() => setAbilitiesOpen(!abilitiesOpen)}
+                        hasAbilities={Object.keys(consumables).some(key => consumables[key] > 0)}
                         isVisible={isMobile}
                     />
                 </>

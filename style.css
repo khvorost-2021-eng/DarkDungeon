@@ -583,7 +583,6 @@ body { margin: 0; background: #0a0a0a; overflow: hidden; font-family: 'Cinzel', 
     height: 100%;
     background: linear-gradient(145deg, #3d5a80 0%, #2c4a6e 100%); 
     border: 2px solid #4a6fa5; 
-    border-radius: 50%;
     box-shadow: 0 0 20px rgba(61,90,128,0.4);
 }
 .player-skin-dark { 
@@ -591,7 +590,6 @@ body { margin: 0; background: #0a0a0a; overflow: hidden; font-family: 'Cinzel', 
     height: 100%;
     background: linear-gradient(145deg, #1a1a1a 0%, #0d0d0d 100%); 
     border: 2px solid #8b0000; 
-    border-radius: 50%;
     box-shadow: 0 0 25px rgba(139,0,0,0.5);
 }
 .player-skin-dark .eye { 
@@ -1096,23 +1094,6 @@ body { margin: 0; background: #0a0a0a; overflow: hidden; font-family: 'Cinzel', 
     border-color: #8b0000;
     box-shadow: 0 0 10px rgba(139,0,0,0.3);
     transform: translateY(-2px);
-}
-
-.btn-abilities {
-    padding: 12px 15px;
-    font-size: 20px;
-    background: linear-gradient(145deg, #d4af37 0%, #b8941f 100%);
-    color: #000;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: all 0.3s;
-    box-shadow: 0 4px 15px rgba(212,175,55,0.3);
-}
-
-.btn-abilities:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 25px rgba(212,175,55,0.5);
 }
 
 .abilities-panel {
@@ -1740,8 +1721,8 @@ body { margin: 0; background: #0a0a0a; overflow: hidden; font-family: 'Cinzel', 
 
 .attack-button-container {
     position: fixed;
-    bottom: 20px;
-    left: 20px;
+    bottom: 40px;
+    right: 20px;
     width: 80px;
     height: 80px;
     pointer-events: all;
@@ -1769,6 +1750,39 @@ body { margin: 0; background: #0a0a0a; overflow: hidden; font-family: 'Cinzel', 
 
 .attack-button:active {
     background: rgba(255, 0, 0, 0.9);
+    transform: scale(0.95);
+}
+
+.abilities-button-container {
+    position: fixed;
+    bottom: 40px;
+    right: 110px;
+    width: 60px;
+    height: 60px;
+    pointer-events: all;
+    z-index: 1002;
+}
+
+.abilities-button-container .btn-abilities {
+    width: 60px;
+    height: 60px;
+    background: rgba(212, 175, 55, 0.8);
+    border: 3px solid #d4af37;
+    border-radius: 50%;
+    color: #000;
+    font-size: 24px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+    transition: all 0.1s;
+}
+
+.abilities-button-container .btn-abilities:active {
+    background: rgba(255, 215, 0, 0.9);
     transform: scale(0.95);
 }
 
