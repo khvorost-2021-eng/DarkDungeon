@@ -1115,16 +1115,6 @@ const Game = () => {
             // Отслеживание ориентации
             const isPortraitMode = window.innerHeight > window.innerWidth;
             setIsPortrait(isPortraitMode);
-            
-            // Принудительная горизонтальная ориентация для мобильных
-            if (isTouchDevice && isMobileWidth && isPortraitMode) {
-                // Не блокируем ориентацию, просто показываем предупреждение
-                if (screen.orientation && screen.orientation.lock) {
-                    screen.orientation.lock('landscape').catch(() => {
-                        // Если не удалось заблокировать, предупреждение покажется через UI
-                    });
-                }
-            }
         };
         
         checkMobile();
@@ -1679,7 +1669,7 @@ const Game = () => {
 
     return (
         <div id="viewport">
-            <RotationWarning isVisible={isMobile && isPortrait} />
+            <RotationWarning isVisible={isPortrait && ('ontouchstart' in window || navigator.maxTouchPoints > 0)} />
             
             {gameState === 'menu' && (
                 <MainMenu 
