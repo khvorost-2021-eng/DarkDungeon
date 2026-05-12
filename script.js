@@ -1669,12 +1669,12 @@ const Game = () => {
 
     return (
         <div id="viewport">
-            {/* <RotationWarning isVisible={isPortrait && ('ontouchstart' in window || navigator.maxTouchPoints > 0)} /> */}
+            <RotationWarning isVisible={isPortrait && ('ontouchstart' in window || navigator.maxTouchPoints > 0)} />
             
             {gameState === 'menu' && (
                 <MainMenu 
-                    onSelectLevels={() => setGameState('levels')}
-                    onSelectShop={() => setGameState('shop')}
+                    onPlay={() => setGameState('levels')}
+                    onShop={() => setGameState('shop')}
                     onSettings={() => setGameState('settings')}
                 />
             )}
