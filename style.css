@@ -559,10 +559,18 @@ body { margin: 0; background: #0a0a0a; overflow: hidden; font-family: 'Cinzel', 
 .wall { background: linear-gradient(145deg, #1a1a1a 0%, #0d0d0d 100%); border: 2px solid #2a2a2a; box-shadow: inset 0 0 30px rgba(0,0,0,0.8), 0 0 10px rgba(0,0,0,0.5); }
 .fog { position: fixed; inset: 0; background: radial-gradient(circle 250px at 50% 50%, transparent 15%, rgba(0,0,0,0.98) 100%); pointer-events: none; z-index: 50; }
 
-.char { position: absolute; width: 40px; height: 40px; transform: translate(-50%, -50%); z-index: 10; }
+.char { position: absolute; width: 40px; height: 40px; transform: translate(-50%, -50%); transition: left 0.05s, top 0.05s; }
+.char.pet-attacking {
+    animation: pet-attack-flash 0.2s ease-out;
+}
 
-/* Скины */
-.skin { 
+@keyframes pet-attack-flash {
+    0% { filter: brightness(1); }
+    50% { filter: brightness(2.5) drop-shadow(0 0 10px #fff); }
+    100% { filter: brightness(1); }
+}
+
+.char.enemy-windup { 
     width: 100%; 
     height: 100%; 
     border-radius: 6px; 
@@ -1001,6 +1009,13 @@ body { margin: 0; background: #0a0a0a; overflow: hidden; font-family: 'Cinzel', 
     border: 1px solid #333;
 }
 .hud-stats { margin-top: 8px; font-size: 13px; color: #888; }
+
+.hud-pet-hp {
+    margin-top: 4px;
+    font-size: 12px;
+    color: #d4af37;
+    font-weight: bold;
+}
 
 .abilities-bar {
     position: fixed;

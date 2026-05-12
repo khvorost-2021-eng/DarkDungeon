@@ -747,20 +747,20 @@ const Shop = ({ money, inventory, consumables, equippedPet, equippedWeapon, buyI
         ],
         potions: [
             { id: 'hp-potion', name: 'Зелье здоровья', price: 50, desc: 'Восстанавливает 50 HP', rarity: 'common', icon: '🧪' },
-            { id: 'big-hp-potion', name: 'Большое зелье', price: 120, desc: 'Восстанавливает 100 HP', rarity: 'rare', icon: '🧴' },
+            { id: 'big-hp-potion', name: 'Большое зелье', price: 80, desc: 'Восстанавливает 100 HP', rarity: 'rare', icon: '🧴' },
             { id: 'strength-potion', name: 'Зелье силы', price: 150, desc: '+20 урона на 30 сек', rarity: 'rare', icon: '💪' },
             { id: 'invincibility', name: 'Невидимость', price: 300, desc: 'Неуязвимость 10 сек', rarity: 'epic', icon: '👻' },
         ],
         artifacts: [
-            { id: 'vampire-ring', name: 'Кольцо вампира', price: 350, desc: 'Восстановление HP при ударе', rarity: 'epic', icon: '💍' },
-            { id: 'speed-boots', name: 'Ботинки скорости', price: 250, desc: '+50% скорости', rarity: 'rare', icon: '👢' },
-            { id: 'crit-amulet', name: 'Амулет крита', price: 400, desc: '25% шанс крита x2', rarity: 'epic', icon: '📿' },
-            { id: 'dragon-heart', name: 'Сердце дракона', price: 1500, desc: 'Вампиризм + крит + скорость', rarity: 'legendary', icon: '🐉' },
+            { id: 'vampire-ring', name: 'Кольцо вампира', price: 350, desc: 'Вампиризм 30 сек', rarity: 'epic', icon: '💍' },
+            { id: 'speed-boots', name: 'Ботинки скорости', price: 250, desc: '+50% скорости 30 сек', rarity: 'rare', icon: '👢' },
+            { id: 'crit-amulet', name: 'Амулет крита', price: 400, desc: 'Крит 25% 30 сек', rarity: 'epic', icon: '📿' },
+            { id: 'dragon-heart', name: 'Сердце дракона', price: 1500, desc: 'Все эффекты 30 сек', rarity: 'legendary', icon: '🐉' },
         ],
         pets: [
-            { id: 'wolf-pet', name: 'Волк', price: 200, desc: 'Атакует врагов', rarity: 'rare', icon: '🐺', type: 'wolf' },
-            { id: 'raven-pet', name: 'Ворон', price: 300, desc: 'Собирает монеты', rarity: 'epic', icon: '🦅', type: 'raven' },
-            { id: 'dragon-pet', name: 'Дракончик', price: 800, desc: 'Огненное дыхание', rarity: 'legendary', icon: '🐲', type: 'dragon' },
+            { id: 'wolf-pet', name: 'Волк', price: 200, desc: 'Атака 12, защита 20%, HP 60', rarity: 'rare', icon: '🐺', type: 'wolf' },
+            { id: 'raven-pet', name: 'Ворон', price: 300, desc: 'Атака 20, защита 30%, HP 100', rarity: 'epic', icon: '🦅', type: 'raven' },
+            { id: 'dragon-pet', name: 'Дракончик', price: 800, desc: 'Атака 25, защита 35%, HP 100', rarity: 'legendary', icon: '🐲', type: 'dragon' },
         ]
     };
 
@@ -924,12 +924,22 @@ const GameWorld = ({
     player, pet, enemies, playerSkinClass, petSkinClass, equippedPet, equippedWeapon, playerName,
     isAttacking, playerHpVisible, enemyHpVisible,
     coins, removeCoin, consumables, useItem, activeEffects, abilitiesOpen, setAbilitiesOpen, isMobile,
+    petHp, petMaxHp, petAttacking,
     gameState, onOpenShop, onExitToMenu, currentMap
 }) => {
     if (gameState !== 'playing') return null;
 
     const handleMenuClick = () => {
         onExitToMenu();
+    };
+
+    const getPetIcon = (petType) => {
+        const icons = {
+            'wolf': '🐺',
+            'raven': '🦅',
+            'dragon': '🐲'
+        };
+        return icons[petType] || '';
     };
 
     // Информация о расходуемых предметах для отображения
@@ -970,6 +980,11 @@ const GameWorld = ({
             <div className="hud"> 
                 <div className="hud-player-name">👤 {playerName || 'Игрок'}</div>
                 <div>❤️ {Math.max(0, Math.floor(player.hp))} | 🪙 {player.money || 0}</div>
+                {petMaxHp > 0 && (
+                    <div className="hud-pet-hp">
+                        {getPetIcon(equippedPet)} HP: {Math.floor(petHp)}/{petMaxHp}
+                    </div>
+                )}
                 <div className="hud-stats">
                     ⚔️ {player.dmg} | 🛡️ {player.shield > 0 ? Math.round(player.shield * 100) + '%' : '0%'}
                 </div>
@@ -1049,7 +1064,7 @@ const GameWorld = ({
                 </div>
 
                 {equippedPet && equippedPet !== 'none' && (
-                    <div className="char" style={{ left: pet.x, top: pet.y }}>
+                    <div className={`char ${petAttacking ? 'pet-attacking' : ''}`} style={{ left: pet.x, top: pet.y }}>
                         <div className={`pet-${petSkinClass}`} />
                     </div>
                 )}
@@ -1095,6 +1110,14 @@ const Game = () => {
     const [consumables, setConsumables] = useState({});
     const [activeEffects, setActiveEffects] = useState({}); // Активные эффекты (сила, невидимость и т.д.)
     const [abilitiesOpen, setAbilitiesOpen] = useState(false); // Окно способностей на мобильной
+    
+    // Питомец
+    const [petHp, setPetHp] = useState(0);
+    const [petMaxHp, setPetMaxHp] = useState(0);
+    const [petDamage, setPetDamage] = useState(0);
+    const [petProtection, setPetProtection] = useState(0);
+    const [petAlive, setPetAlive] = useState(true);
+    const [petAttacking, setPetAttacking] = useState(false);
 
     // Используем useState вместо useRef для позиций (фикс движения)
     const [player, setPlayer] = useState({ x: 90, y: 90, hp: 100, maxHp: 100, dmg: 40, money: 200, shield: 0, currentWeapon: 'stick' });
@@ -1141,6 +1164,35 @@ const Game = () => {
     const handleJoystickMove = useCallback((input) => {
         joystickInput.current = input;
     }, []);
+
+    // Инициализация характеристик питомца
+    const initPetStats = useCallback((petType) => {
+        const petStats = {
+            'wolf': { hp: 60, damage: 12, protection: 0.2 }, // rare
+            'raven': { hp: 100, damage: 20, protection: 0.3 }, // epic
+            'dragon': { hp: 100, damage: 25, protection: 0.35 } // legendary
+        };
+        
+        const stats = petStats[petType] || { hp: 30, damage: 5, protection: 0.1 };
+        setPetMaxHp(stats.hp);
+        setPetHp(stats.hp);
+        setPetDamage(stats.damage);
+        setPetProtection(stats.protection);
+        setPetAlive(true);
+    }, []);
+
+    // Обновляем характеристики питомца при смене
+    useEffect(() => {
+        if (equippedPet && equippedPet !== 'none') {
+            initPetStats(equippedPet);
+        } else {
+            setPetHp(0);
+            setPetMaxHp(0);
+            setPetDamage(0);
+            setPetProtection(0);
+            setPetAlive(true);
+        }
+    }, [equippedPet, initPetStats]);
 
     // Обработка клавиш для использования предметов (1-9)
     useEffect(() => {
@@ -1190,7 +1242,7 @@ const Game = () => {
                     if (d < 90) {
                         // Критический удар
                         let damage = player.dmg;
-                        if (activeEffects.crit && Math.random() < 0.25) {
+                        if (activeEffects.crit && Date.now() < activeEffects.crit && Math.random() < 0.25) {
                             damage *= 2;
                         }
                         
@@ -1198,7 +1250,7 @@ const Game = () => {
                         showEnemyHpBar(en.id);
                         
                         // Вампиризм - восстановление HP
-                        if (activeEffects.vampire) {
+                        if (activeEffects.vampire && Date.now() < activeEffects.vampire) {
                             setPlayer(p => ({ ...p, hp: Math.min(p.maxHp, p.hp + Math.floor(damage * 0.3)) }));
                         }
                         
@@ -1391,6 +1443,11 @@ const Game = () => {
         setShards([]);
         setCoins([]);
         setActiveEffects({}); // Сбрасываем активные эффекты при смене уровня
+        window.petAttackTimer = null; // Сбрасываем таймер атаки питомца
+        // Восстанавливаем HP питомца
+        if (equippedPet && equippedPet !== 'none') {
+            initPetStats(equippedPet);
+        }
     };
 
     const getPatrolTarget = useCallback((map) => {
@@ -1415,11 +1472,16 @@ const Game = () => {
         setShards([]);
         setCoins([]);
         setActiveEffects({}); // Сбрасываем активные эффекты при рестарте
+        window.petAttackTimer = null; // Сбрасываем таймер атаки питомца
+        // Восстанавливаем HP питомца
+        if (equippedPet && equippedPet !== 'none') {
+            initPetStats(equippedPet);
+        }
         setIsShaking(false);
         setPlayerHpVisible(false);
         setEnemyHpVisible({});
         setEnemies([]);
-    }, [inventory, money]);
+    }, [inventory, money, equippedPet, initPetStats]);
 
     const buyItem = useCallback((itemId, price) => {
         const owned = inventory.includes(itemId);
@@ -1563,16 +1625,29 @@ const Game = () => {
                     }, 10000);
                     break;
                 case 'vampire-ring':
-                    setActiveEffects(prev => ({ ...prev, vampire: true }));
+                    setActiveEffects(prev => ({ ...prev, vampire: Date.now() + 30000 }));
+                    setTimeout(() => {
+                        setActiveEffects(prev => ({ ...prev, vampire: null }));
+                    }, 30000);
                     break;
                 case 'speed-boots':
-                    setActiveEffects(prev => ({ ...prev, speed: true }));
+                    setActiveEffects(prev => ({ ...prev, speed: Date.now() + 30000 }));
+                    setTimeout(() => {
+                        setActiveEffects(prev => ({ ...prev, speed: null }));
+                    }, 30000);
                     break;
                 case 'crit-amulet':
-                    setActiveEffects(prev => ({ ...prev, crit: true }));
+                    setActiveEffects(prev => ({ ...prev, crit: Date.now() + 30000 }));
+                    setTimeout(() => {
+                        setActiveEffects(prev => ({ ...prev, crit: null }));
+                    }, 30000);
                     break;
                 case 'dragon-heart':
-                    setActiveEffects(prev => ({ ...prev, vampire: true, speed: true, crit: true }));
+                    const endTime = Date.now() + 30000;
+                    setActiveEffects(prev => ({ ...prev, vampire: endTime, speed: endTime, crit: endTime }));
+                    setTimeout(() => {
+                        setActiveEffects(prev => ({ ...prev, vampire: null, speed: null, crit: null }));
+                    }, 30000);
                     break;
             }
 
@@ -1603,7 +1678,7 @@ const Game = () => {
             }
 
             // Движение игрока
-            const s = activeEffects.speed ? 6 : 4; // Увеличенная скорость с ботинками
+            const s = (activeEffects.speed && Date.now() < activeEffects.speed) ? 6 : 4; // Увеличенная скорость с ботинками
             setPlayer(prev => {
                 let nx = prev.x, ny = prev.y;
                 
@@ -1630,6 +1705,68 @@ const Game = () => {
                 x: prev.x + (player.x - 40 - prev.x) * 0.05,
                 y: prev.y + (player.y - 30 - prev.y) * 0.05
             }));
+
+            // Атака питомца (каждые 1.5 секунды)
+            if (petAlive && petDamage > 0) {
+                const now = Date.now();
+                if (!window.petAttackTimer || now - window.petAttackTimer > 1500) {
+                    window.petAttackTimer = now;
+                    
+                    // Находим ближайшего врага в радиусе 100px от игрока
+                    setEnemies(prevEnemies => {
+                        let nearestEnemy = null;
+                        let nearestDist = Infinity;
+                        
+                        prevEnemies.forEach(en => {
+                            if (!en) return;
+                            const dist = Math.sqrt((en.x - player.x)**2 + (en.y - player.y)**2);
+                            if (dist < 100 && dist < nearestDist) {
+                                nearestDist = dist;
+                                nearestEnemy = en;
+                            }
+                        });
+                        
+                        if (nearestEnemy) {
+                            // Анимация атаки питомца
+                            setPetAttacking(true);
+                            setTimeout(() => setPetAttacking(false), 200);
+                            
+                            // Наносим урон
+                            return prevEnemies.map(en => {
+                                if (en.id === nearestEnemy.id) {
+                                    const newHp = en.hp - petDamage;
+                                    if (newHp <= 0) {
+                                        // Враг умер от питомца
+                                        const hudCoinX = 125;
+                                        const hudCoinY = 35;
+                                        const worldOffsetX = -player.x + window.innerWidth / 2;
+                                        const worldOffsetY = -player.y + window.innerHeight / 2;
+                                        const coinId = Date.now();
+                                        setCoins(c => [...c, {
+                                            id: coinId,
+                                            startX: en.x + worldOffsetX,
+                                            startY: en.y + worldOffsetY,
+                                            endX: hudCoinX,
+                                            endY: hudCoinY
+                                        }]);
+                                        
+                                        setTimeout(() => {
+                                            setMoney(m => m + 50);
+                                            setPlayer(p => ({ ...p, money: p.money + 50 }));
+                                            setCoinsEarned(c => c + 50);
+                                        }, 600);
+                                        
+                                        return null;
+                                    }
+                                    return { ...en, hp: newHp };
+                                }
+                                return en;
+                            }).filter(Boolean);
+                        }
+                        return prevEnemies;
+                    });
+                }
+            }
 
             // ИИ Врагов
             setEnemies(prevEnemies => {
@@ -1692,6 +1829,23 @@ const Game = () => {
                                     if (p.hp > 0) {
                                         let damage = newEn.damage || 10;
                                         if (p.shield) damage *= (1 - p.shield);
+                                        
+                                        // Питомец принимает часть урона
+                                        if (petAlive && petProtection > 0 && petHp > 0) {
+                                            const petDamage = damage * petProtection;
+                                            const playerDamage = damage - petDamage;
+                                            
+                                            setPetHp(prev => {
+                                                const newPetHp = Math.max(0, prev - petDamage);
+                                                if (newPetHp <= 0) {
+                                                    setPetAlive(false);
+                                                }
+                                                return newPetHp;
+                                            });
+                                            
+                                            damage = playerDamage;
+                                        }
+                                        
                                         const newHp = Math.max(0, p.hp - damage);
                                         if (newHp <= 0) {
                                             setIsShaking(true);
@@ -1785,7 +1939,7 @@ const Game = () => {
                 gameLoopRef.current = null;
             }
         };
-    }, [gameState, player.x, player.y, player.hp, currentMap, showPlayerHpBar, getPatrolTarget]);
+    }, [gameState, player.x, player.y, player.hp, currentMap, showPlayerHpBar, getPatrolTarget, petDamage, petAlive, petProtection, petHp, activeEffects]);
 
     // Keyboard handlers
     useEffect(() => {
@@ -1953,6 +2107,9 @@ const Game = () => {
                         abilitiesOpen={abilitiesOpen}
                         setAbilitiesOpen={setAbilitiesOpen}
                         isMobile={isMobile}
+                        petHp={petHp}
+                        petMaxHp={petMaxHp}
+                        petAttacking={petAttacking}
                         gameState={gameState}
                         onOpenShop={handleOpenShop}
                         onExitToMenu={handleExitToMenu}
