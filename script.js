@@ -406,19 +406,26 @@ const HPBar = ({ hp, maxHp, isVisible }) => {
 };
 
 const BloodParticles = ({ x, y, isPlayer = false, onComplete }) => {
-    const [isVisible, setIsVisible] = useState(true);
+    const [opacity, setOpacity] = useState(1);
     
     useEffect(() => {
-        // Remove after animation
+        // Fade out over 2 seconds
         const timer = setTimeout(() => {
-            setIsVisible(false);
-            if (onComplete) onComplete();
-        }, 1000);
+            setOpacity(0);
+        }, 100);
         
-        return () => clearTimeout(timer);
+        // Remove after fade out
+        const removeTimer = setTimeout(() => {
+            if (onComplete) onComplete();
+        }, 2100);
+        
+        return () => {
+            clearTimeout(timer);
+            clearTimeout(removeTimer);
+        };
     }, [onComplete]);
     
-    if (!isVisible) return null;
+    if (opacity <= 0) return null;
     
     // Generate particles on render
     const particleCount = isPlayer ? 20 + Math.floor(Math.random() * 10) : 8 + Math.floor(Math.random() * 5);
@@ -448,22 +455,12 @@ const BloodParticles = ({ x, y, isPlayer = false, onComplete }) => {
                         top: p.y + 'px',
                         width: p.size + 'px',
                         height: p.size + 'px',
-                        animation: 'blood-fade 1s ease-out forwards'
+                        opacity: opacity,
+                        transform: 'translate(-50%, -50%)',
+                        transition: 'opacity 2s ease-out'
                     }}
                 />
             ))}
-            <style>{`
-                @keyframes blood-fade {
-                    0% {
-                        opacity: 1;
-                        transform: translate(-50%, -50%) scale(1);
-                    }
-                    100% {
-                        opacity: 0;
-                        transform: translate(-50%, -50%) scale(0.3);
-                    }
-                }
-            `}</style>
         </>
     );
 };
