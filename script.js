@@ -965,7 +965,7 @@ const DeathScreen = ({ onRestart, isShaking }) => (
             <div className="death-blood-edge death-blood-bottom" />
         </div>
         <div className="death-screen">
-            <div className="death-text">YOU DIED</div>
+            <div className="death-text">СМЕРТЬ</div>
             <button className="death-btn" onClick={onRestart}>НАЧАТЬ ЗАНОВО</button>
         </div>
     </>
@@ -1194,8 +1194,8 @@ const Game = () => {
                             return null;
                         }
                         
-                        // Враг получил урон - переходим в панику на 1-2 секунды
-                        return { ...en, hp: newHp, panicTimer: 1000 + Math.random() * 1000 };
+                        // Враг получил урон - продолжаем преследовать
+                        return { ...en, hp: newHp };
                     }
                     return en;
                 }).filter(Boolean);
@@ -1338,8 +1338,7 @@ const Game = () => {
                 isAttacking: false,
                 patrolTarget: null,
                 damage: stats.damage,
-                speed: stats.speed,
-                panicTimer: 0
+                speed: stats.speed
             };
         });
         
@@ -1533,7 +1532,6 @@ const Game = () => {
                     }
                     
                     if (newEn.attackCooldown > 0) newEn.attackCooldown -= 16;
-                    if (newEn.panicTimer > 0) newEn.panicTimer -= 16;
 
                     const dx = player.x - newEn.x;
                     const dy = player.y - newEn.y;
@@ -1541,14 +1539,17 @@ const Game = () => {
                     const canReach = canReachPlayer(newEn.x, newEn.y, player.x, player.y, currentMap);
 
                     // State machine
-                    if (newEn.panicTimer > 0) {
-                        // PANIC state - enemy was damaged, just patrol
-                        newEn.state = 'panic';
-                    } else if (dist < 100 && canReach) {
-                        // CHASE state - can see and reach player
-                        newEn.state = 'chase';
+                    if (dist < 100) {
+                        // Can see player
+                        if (canReach) {
+                            // Can reach player - chase
+                            newEn.state = 'chase';
+                        } else {
+                            // Can see but can't reach - patrol (move away)
+                            newEn.state = 'patrol';
+                        }
                     } else {
-                        // PATROL state - default behavior
+                        // Can't see player - patrol
                         newEn.state = 'patrol';
                     }
 
@@ -1590,7 +1591,7 @@ const Game = () => {
                             }
                         }
                     } else {
-                        // PATROL or PANIC - same movement logic
+                        // PATROL - move away from wall
                         newEn.isAttacking = false;
                         
                         // Плавное движение по кругу с проверкой на стены
