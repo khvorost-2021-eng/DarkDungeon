@@ -1096,8 +1096,19 @@ const Game = () => {
     useEffect(() => {
         const checkMobile = () => {
             const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-            const isSmallScreen = window.innerWidth <= 768;
-            setIsMobile(isTouchDevice && isSmallScreen);
+            const isMobileWidth = window.innerWidth <= 1024; // Увеличим порог для планшетов
+            setIsMobile(isTouchDevice && isMobileWidth);
+            
+            // Принудительная горизонтальная ориентация для мобильных
+            if (isTouchDevice && isMobileWidth) {
+                // Пытаемся заблокировать горизонтальную ориентацию
+                if (screen.orientation && screen.orientation.lock) {
+                    screen.orientation.lock('landscape').catch(() => {
+                        // Если не удалось заблокировать, показываем предупреждение
+                        console.log('Пожалуйста, поверните устройство в горизонтальную ориентацию');
+                    });
+                }
+            }
         };
         
         checkMobile();
@@ -1110,16 +1121,84 @@ const Game = () => {
         };
     }, []);
     
-    // Обработчики мобильных контролей
+    // Обработчики мобильных контролов
     const handleJoystickMove = useCallback((input) => {
         setJoystickInput(input);
     }, []);
     
+    const handleAttack = useCallback(() => {
+        if (isAttacking || gameState !== 'playing') return;
+        setIsAttacking(true);
+        SFXManager.playAttack();
+        
+        setTimeout(() => {
+            setEnemies(prevEnemies => {
+                return prevEnemies.map(en => {
+                    const d = Math.sqrt((en.x - player.x)**2 + (en.y - player.y)**2);
+                    if (d < 90) {
+                        const newHp = en.hp - player.dmg;
+                        showEnemyHpBar(en.id);
+                        
+                        if (newHp <= 0) {
+                            // Враг умер - создаём эффекты
+                            setShards(s => [...s, { id: Date.now(), x: en.x, y: en.y }]);
+                            setBloodEffects(b => [...b, { id: Date.now(), x: en.x, y: en.y }]);
+                            
+                            // Монеты - летят к счётчику монет (🪙) в HUD
+                            const hudCoinX = 125;
+                            const hudCoinY = 35;
+                            const worldOffsetX = -player.x + window.innerWidth / 2;
+                            const worldOffsetY = -player.y + window.innerHeight / 2;
+                            const coinId = Date.now();
+                            setCoins(c => [...c, {
+                                id: coinId,
+                                startX: en.x + worldOffsetX,
+                                startY: en.y + worldOffsetY,
+                                endX: hudCoinX,
+                                endY: hudCoinY
+                            }]);
+                            
+                            setTimeout(() => {
+                                setMoney(m => m + 50);
+                                setPlayer(p => ({ ...p, money: p.money + 50 }));
+                                setCoinsEarned(c => c + 50);
+                            }, 600);
+                            
+                            return null;
+                        }
+                        
+                        return { ...en, hp: newHp };
+                    }
+                    return en;
+                }).filter(Boolean);
+            });
+            
+            setIsAttacking(false);
+            
+            // Проверка победы
+            setEnemies(currentEnemies => {
+                if (currentEnemies.length === 0 || currentEnemies.every(e => e === null)) {
+                    setTimeout(() => {
+                        const nextLevel = currentLevel + 1;
+                        if (nextLevel > unlockedLevels) {
+                            setUnlockedLevels(nextLevel);
+                        }
+                        setGameState('victory');
+                        SFXManager.playVictory();
+                        if (gameLoopRef.current) {
+                            clearInterval(gameLoopRef.current);
+                            gameLoopRef.current = null;
+                        }
+                    }, 500);
+                }
+                return currentEnemies;
+            });
+        }, 200);
+    }, [isAttacking, gameState, player.x, player.y, player.dmg, showEnemyHpBar, currentLevel, unlockedLevels]);
+    
     const handleMobileAttack = useCallback(() => {
-        if (gameState === 'playing') {
-            handleAttack();
-        }
-    }, [gameState, handleAttack]);
+        handleAttack();
+    }, [handleAttack]);
 
     // Формулы сложности
     const calculateEnemyStats = (levelId) => {
@@ -1221,80 +1300,7 @@ const Game = () => {
         return emptyTiles[Math.floor(Math.random() * emptyTiles.length)];
     }, []);
 
-    const handleAttack = useCallback(() => {
-        if (isAttacking || gameState !== 'playing') return;
-        setIsAttacking(true);
-        SFXManager.playAttack();
-        
-        setTimeout(() => {
-            setEnemies(prevEnemies => {
-                return prevEnemies.map(en => {
-                    const d = Math.sqrt((en.x - player.x)**2 + (en.y - player.y)**2);
-                    if (d < 90) {
-                        const newHp = en.hp - player.dmg;
-                        showEnemyHpBar(en.id);
-                        
-                        if (newHp <= 0) {
-                            // Враг умер - создаём эффекты
-                            setShards(s => [...s, { id: generateId(), x: en.x, y: en.y }]);
-                            setBloodEffects(b => [...b, { id: generateId(), x: en.x, y: en.y }]);
-                            
-                            // Монеты - летят к счётчику монет (🪙) в HUD
-                            // Монеты рендерятся в экранных координатах (вне game-world)
-                            // HUD: top:20, left:20, padding:15px 25px
-                            // 🪙 находится примерно на x=125, y=35 (первая строка HUD)
-                            const hudCoinX = 125;
-                            const hudCoinY = 35;
-                            const worldOffsetX = -player.x + window.innerWidth / 2;
-                            const worldOffsetY = -player.y + window.innerHeight / 2;
-                            const coinId = generateId();
-                            setCoins(c => [...c, {
-                                id: coinId,
-                                startX: en.x + worldOffsetX, // Конвертируем мир в экран
-                                startY: en.y + worldOffsetY,
-                                endX: hudCoinX, // Позиция счётчика монет в HUD
-                                endY: hudCoinY
-                            }]);
-                            
-                            setTimeout(() => {
-                                setMoney(m => m + 50);
-                                setPlayer(p => ({ ...p, money: p.money + 50 }));
-                                setCoinsEarned(c => c + 50);
-                            }, 600);
-                            
-                            return null; // Удаляем врага
-                        }
-                        
-                        return { ...en, hp: newHp };
-                    }
-                    return en;
-                }).filter(Boolean);
-            });
-            
-            setIsAttacking(false);
-            
-            // Проверка победы - все враги убиты
-            setEnemies(currentEnemies => {
-                if (currentEnemies.length === 0 || currentEnemies.every(e => e === null)) {
-                    setTimeout(() => {
-                        // Автоматически разблокируем следующий уровень при победе
-                        const nextLevel = currentLevel + 1;
-                        if (nextLevel > unlockedLevels) {
-                            setUnlockedLevels(nextLevel);
-                        }
-                        setGameState('victory');
-                        SFXManager.playVictory();
-                        if (gameLoopRef.current) {
-                            clearInterval(gameLoopRef.current);
-                            gameLoopRef.current = null;
-                        }
-                    }, 500);
-                }
-                return currentEnemies;
-            });
-        }, 200);
-    }, [isAttacking, gameState, player.x, player.y, player.dmg, showEnemyHpBar]);
-
+    
     const restartGame = useCallback(() => {
         setPlayer({ 
             x: 90, y: 90, hp: 100, maxHp: 100, 

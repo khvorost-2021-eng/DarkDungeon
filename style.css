@@ -1515,7 +1515,7 @@ body { margin: 0; background: #0a0a0a; overflow: hidden; font-family: 'Cinzel', 
 }
 
 /* Скрыть мобильные контролы на десктопе */
-@media (min-width: 769px) {
+@media (min-width: 1025px) {
     .mobile-controls {
         display: none;
     }
