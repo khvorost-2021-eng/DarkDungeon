@@ -762,16 +762,6 @@ body { margin: 0; background: #0a0a0a; overflow: hidden; font-family: 'Cinzel', 
 .hp-bar-fill.yellow { background: linear-gradient(90deg, #f39c12, #f1c40f); box-shadow: 0 0 8px rgba(241,196,15,0.4); }
 .hp-bar-fill.red { background: linear-gradient(90deg, #c0392b, #e74c3c); box-shadow: 0 0 8px rgba(231,76,60,0.4); }
 
-/* Кровь */
-.blood-particle {
-    position: absolute;
-    background: radial-gradient(circle, #ff0000 0%, #cc0000 50%, #880000 100%);
-    border-radius: 50%;
-    pointer-events: none;
-    z-index: 100;
-    box-shadow: 0 0 15px rgba(255,0,0,0.8);
-}
-
 /* Монеты */
 .coin {
     position: absolute;
