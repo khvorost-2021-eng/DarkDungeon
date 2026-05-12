@@ -926,7 +926,7 @@ const GameWorld = ({
 
                 {enemies.map(en => (
                     <div key={en.id} className="char" style={{ left: en.x, top: en.y }}>
-                        <div className={`skin enemy-skin ${en.isAttacking ? 'enemy-windup' : ''}`}>
+                        <div className={`skin enemy-skin ${en.isAttacking ? 'enemy-windup' : ''} ${en.state === 'patrol' ? 'enemy-patrol' : ''}`}>
                             <div className="eye left"/>
                             <div className="eye right"/>
                         </div>
@@ -967,6 +967,9 @@ const Game = () => {
     const [pet, setPet] = useState({ x: 60, y: 90 });
     const [enemies, setEnemies] = useState([]);
     const [currentMap, setCurrentMap] = useState(LEVELS_DATA[0].map);
+    
+    // Force update для гарантии рендеринга
+    const [, forceUpdate] = useReducer(x => x + 1, 0);
     
     const keys = useRef({});
     const playerHpTimer = useRef(null);
@@ -1022,31 +1025,39 @@ const Game = () => {
         // Валидация позиций врагов - проверяем что они не на стенах
         const validEnemyPositions = enemyPositions.filter(pos => canMoveTo(pos.x, pos.y, levelData.map));
         
-        // Если после фильтрации осталось мало врагов, генерируем новых на валидных позициях
-        const targetEnemyCount = Math.max(1, validEnemyPositions.length);
+        // Гарантируем минимум 3 врага или столько, сколько было в уровне
+        const targetEnemyCount = Math.max(3, enemyPositions.length);
         const finalPositions = [...validEnemyPositions];
         
-        while (finalPositions.length < targetEnemyCount) {
+        // Генерируем новых врагов если нужно
+        let attempts = 0;
+        while (finalPositions.length < targetEnemyCount && attempts < 100) {
             const patrolPos = getPatrolTarget(levelData.map);
             if (patrolPos && !finalPositions.some(p => Math.abs(p.x - patrolPos.x) < 30 && Math.abs(p.y - patrolPos.y) < 30)) {
                 finalPositions.push(patrolPos);
             }
+            attempts++;
         }
 
-        const newEnemies = finalPositions.map((pos, index) => ({
-            id: index + 1,
-            x: pos.x,
-            y: pos.y,
-            hp: stats.hp,
-            maxHp: stats.hp,
-            state: 'idle',
-            angle: Math.random() * Math.PI * 2, // Случайное начальное направление
-            attackCooldown: 0,
-            isAttacking: false,
-            patrolTarget: null,
-            damage: stats.damage,
-            speed: stats.speed
-        }));
+        const newEnemies = finalPositions.map((pos, index) => {
+            const angle = Math.random() * Math.PI * 2;
+            return {
+                id: index + 1,
+                x: pos.x,
+                y: pos.y,
+                hp: stats.hp,
+                maxHp: stats.hp,
+                state: 'idle',
+                angle: angle,
+                patrolDirX: Math.cos(angle),
+                patrolDirY: Math.sin(angle),
+                attackCooldown: 0,
+                isAttacking: false,
+                patrolTarget: null,
+                damage: stats.damage,
+                speed: stats.speed
+            };
+        });
         
         setEnemies(newEnemies);
         setPet({ x: levelData.playerStart.x - 30, y: levelData.playerStart.y });
@@ -1295,13 +1306,18 @@ const Game = () => {
                 return prevEnemies.map(en => {
                     let newEn = { ...en };
                     
+                    // Убедимся что angle инициализирован
+                    if (typeof newEn.angle !== 'number') {
+                        newEn.angle = Math.random() * Math.PI * 2;
+                    }
+                    
                     if (newEn.attackCooldown > 0) newEn.attackCooldown -= 16;
 
                     const dx = player.x - newEn.x;
                     const dy = player.y - newEn.y;
                     const dist = Math.sqrt(dx*dx + dy*dy);
 
-                    if (dist < 250) {
+                    if (dist < 100) {
                         newEn.state = 'chase';
                         
                         // Атака
@@ -1344,30 +1360,23 @@ const Game = () => {
                         // Патрулирование - враги всегда двигаются независимо от игрока
                         newEn.state = 'patrol';
                         newEn.isAttacking = false;
-
-                        // Движение в текущем направлении
-                        const patrolSpeed = (newEn.speed || 1.8) * 0.5;
-                        const vx = Math.cos(newEn.angle) * patrolSpeed;
-                        const vy = Math.sin(newEn.angle) * patrolSpeed;
                         
-                        // Проверяем возможность движения
-                        if (canMoveTo(newEn.x + vx, newEn.y + vy, currentMap)) {
-                            newEn.x += vx;
-                            newEn.y += vy;
-                        } else {
-                            // Если упёрлись в стену - выбираем новое случайное направление
-                            newEn.angle = Math.random() * Math.PI * 2;
-                        }
+                        // Очень заметное движение - двигаемся по кругу
+                        const time = Date.now() / 1000;
+                        const radius = 100;
+                        const centerX = newEn.id * 200 + 200;
+                        const centerY = 200;
                         
-                        // Случайно меняем направление каждые ~2 секунды (1/60 шанс на кадр)
-                        if (Math.random() < 0.02) {
-                            newEn.angle = Math.random() * Math.PI * 2;
-                        }
+                        newEn.x = centerX + Math.cos(time * 2 + newEn.id) * radius;
+                        newEn.y = centerY + Math.sin(time * 2 + newEn.id) * radius;
                     }
                     
                     return newEn;
                 });
             });
+
+            // Принудительное обновление для гарантии рендеринга врагов
+            forceUpdate();
 
         }, 16);
 

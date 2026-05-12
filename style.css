@@ -1118,6 +1118,12 @@ body { margin: 0; background: #0a0a0a; overflow: hidden; font-family: 'Cinzel', 
     box-shadow: 0 0 5px rgba(0,0,0,0.5);
 }
 
+/* Визуальный индикатор патрулирования */
+.enemy-patrol {
+    border: 2px solid #00ff00 !important;
+    box-shadow: 0 0 10px #00ff00 !important;
+}
+
 /* ========== НАСТРОЙКИ ========== */
 .settings-screen {
     position: fixed;
