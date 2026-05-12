@@ -440,40 +440,37 @@ const EnemyShards = ({ x, y, onComplete }) => {
 
 const BloodParticles = ({ x, y, isPlayer = false, onComplete }) => {
     const [isVisible, setIsVisible] = useState(true);
-    const [particles, setParticles] = useState([]);
     
     useEffect(() => {
-        // 15-25 particles for player, 5-10 for enemy
-        const particleCount = isPlayer ? 15 + Math.floor(Math.random() * 11) : 5 + Math.floor(Math.random() * 6);
-        const newParticles = Array.from({ length: particleCount }, (_, i) => {
-            const angle = Math.random() * Math.PI * 2;
-            const distance = 40 + Math.random() * 60;
-            const size = 8 + Math.random() * 4;
-            const endX = x + Math.cos(angle) * distance;
-            const endY = y + Math.sin(angle) * distance;
-            return {
-                id: i,
-                startX: x,
-                startY: y,
-                endX: endX,
-                endY: endY,
-                size: size,
-                delay: Math.random() * 0.1
-            };
-        });
-        setParticles(newParticles);
-        
-        // Hide component after animation and call onComplete
-        const maxDelay = 0.1;
+        // Remove after 1 second
         const timer = setTimeout(() => {
             setIsVisible(false);
             if (onComplete) onComplete();
-        }, (0.8 + maxDelay) * 1000);
+        }, 1000);
         
         return () => clearTimeout(timer);
-    }, [x, y, isPlayer, onComplete]);
+    }, [onComplete]);
     
     if (!isVisible) return null;
+    
+    // Generate particles on render
+    const particleCount = isPlayer ? 15 + Math.floor(Math.random() * 11) : 5 + Math.floor(Math.random() * 6);
+    const particles = Array.from({ length: particleCount }, (_, i) => {
+        const angle = Math.random() * Math.PI * 2;
+        const distance = 40 + Math.random() * 60;
+        const size = 8 + Math.random() * 4;
+        const endX = x + Math.cos(angle) * distance;
+        const endY = y + Math.sin(angle) * distance;
+        return {
+            id: i,
+            startX: x,
+            startY: y,
+            endX: endX,
+            endY: endY,
+            size: size,
+            delay: Math.random() * 0.1
+        };
+    });
     
     return (
         <>
