@@ -1669,7 +1669,7 @@ const Game = () => {
 
     return (
         <div id="viewport">
-            <RotationWarning isVisible={isPortrait && ('ontouchstart' in window || navigator.maxTouchPoints > 0)} />
+            {/* <RotationWarning isVisible={isPortrait && ('ontouchstart' in window || navigator.maxTouchPoints > 0)} /> */}
             
             {gameState === 'menu' && (
                 <MainMenu 
