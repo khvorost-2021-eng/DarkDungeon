@@ -1361,14 +1361,30 @@ const Game = () => {
                         newEn.state = 'patrol';
                         newEn.isAttacking = false;
                         
-                        // Очень заметное движение - двигаемся по кругу
+                        // Движение по кругу с проверкой на стены
                         const time = Date.now() / 1000;
                         const radius = 100;
                         const centerX = newEn.id * 200 + 200;
                         const centerY = 200;
                         
-                        newEn.x = centerX + Math.cos(time * 2 + newEn.id) * radius;
-                        newEn.y = centerY + Math.sin(time * 2 + newEn.id) * radius;
+                        const newX = centerX + Math.cos(time * 2 + newEn.id) * radius;
+                        const newY = centerY + Math.sin(time * 2 + newEn.id) * radius;
+                        
+                        // Проверяем можно ли двигаться в новую позицию
+                        if (canMoveTo(newX, newY, currentMap)) {
+                            newEn.x = newX;
+                            newEn.y = newY;
+                        } else {
+                            // Если не можем двигаться - остаемся на месте или выбираем новую точку
+                            const angle = Math.random() * Math.PI * 2;
+                            const safeX = centerX + Math.cos(angle) * radius;
+                            const safeY = centerY + Math.sin(angle) * radius;
+                            
+                            if (canMoveTo(safeX, safeY, currentMap)) {
+                                newEn.x = safeX;
+                                newEn.y = safeY;
+                            }
+                        }
                     }
                     
                     return newEn;
