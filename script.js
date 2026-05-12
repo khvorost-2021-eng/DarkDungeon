@@ -405,39 +405,68 @@ const HPBar = ({ hp, maxHp, isVisible }) => {
     );
 };
 
-const EnemyShards = ({ x, y, onComplete }) => {
-    const [shards, setShards] = useState([]);
+const BloodParticles = ({ x, y, isPlayer = false, onComplete }) => {
+    const [isVisible, setIsVisible] = useState(true);
+    
     useEffect(() => {
-        const shardCount = 5 + Math.floor(Math.random() * 3);
-        const newShards = Array.from({ length: shardCount }, (_, i) => ({
-            id: i, angle: (Math.PI * 2 * i) / shardCount + Math.random() * 0.5,
-            distance: 60 + Math.random() * 60, rot: Math.random() * 360, size: 8 + Math.random() * 6
-        }));
-        setShards(newShards);
-        const timer = setTimeout(onComplete, 700);
+        // Remove after animation
+        const timer = setTimeout(() => {
+            setIsVisible(false);
+            if (onComplete) onComplete();
+        }, 1000);
+        
         return () => clearTimeout(timer);
     }, [onComplete]);
+    
+    if (!isVisible) return null;
+    
+    // Generate particles on render
+    const particleCount = isPlayer ? 20 + Math.floor(Math.random() * 10) : 8 + Math.floor(Math.random() * 5);
+    const particles = Array.from({ length: particleCount }, (_, i) => {
+        const angle = Math.random() * Math.PI * 2;
+        const distance = 20 + Math.random() * 30;
+        const size = isPlayer ? 10 + Math.random() * 5 : 6 + Math.random() * 4;
+        const offsetX = Math.cos(angle) * distance;
+        const offsetY = Math.sin(angle) * distance;
+        return {
+            id: i,
+            x: x + offsetX,
+            y: y + offsetY,
+            size: size
+        };
+    });
+    
     return (
         <>
-            {shards.map(shard => {
-                const dx = Math.cos(shard.angle) * shard.distance;
-                const dy = Math.sin(shard.angle) * shard.distance;
-                return (
-                    <div key={shard.id} className="enemy-shard"
-                        style={{ position: 'absolute', left: x, top: y, width: shard.size, height: shard.size,
-                            animation: `shard-fly 0.7s ease-out forwards`, ['--dx']: `${dx}px`, ['--dy']: `${dy}px`, ['--rot']: `${shard.rot}deg` }} />
-                );
-            })}
+            {particles.map(p => (
+                <div 
+                    key={p.id} 
+                    className="blood-particle"
+                    style={{
+                        position: 'absolute',
+                        left: p.x + 'px',
+                        top: p.y + 'px',
+                        width: p.size + 'px',
+                        height: p.size + 'px',
+                        animation: 'blood-fade 1s ease-out forwards'
+                    }}
+                />
+            ))}
             <style>{`
-                @keyframes shard-fly {
-                    0% { transform: translate(-50%, -50%) rotate(0deg) scale(1); opacity: 1; }
-                    100% { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) rotate(var(--rot)) scale(0.3); opacity: 0; }
+                @keyframes blood-fade {
+                    0% {
+                        opacity: 1;
+                        transform: translate(-50%, -50%) scale(1);
+                    }
+                    100% {
+                        opacity: 0;
+                        transform: translate(-50%, -50%) scale(0.3);
+                    }
                 }
             `}</style>
         </>
     );
 };
-
 
 const Coin = ({ startX, startY, endX, endY, onComplete }) => {
     const [pos, setPos] = useState({ x: startX, y: startY });
@@ -944,7 +973,7 @@ const VictoryScreen = ({ onNextLevel, onMenu, level, coinsEarned }) => (
 const GameWorld = ({
     player, pet, enemies, playerSkinClass, petSkinClass, equippedPet, equippedWeapon, playerName,
     isAttacking, playerHpVisible, enemyHpVisible,
-    shards, coins, removeShard, removeCoin,
+    bloodEffects, coins, removeBloodEffect, removeCoin,
     gameState, onOpenShop, onExitToMenu, currentMap
 }) => {
     if (gameState !== 'playing') return null;
@@ -993,12 +1022,13 @@ const GameWorld = ({
             <div id="game-world" style={{ 
                 transform: `translate(${-player.x + window.innerWidth/2}px, ${-player.y + window.innerHeight/2}px)` 
             }}>
-                {shards.map(shard => (
-                    <EnemyShards 
-                        key={shard.id} 
-                        x={shard.x} 
-                        y={shard.y} 
-                        onComplete={() => removeShard(shard.id)} 
+                {bloodEffects.map(blood => (
+                    <BloodParticles 
+                        key={blood.id} 
+                        x={blood.x} 
+                        y={blood.y} 
+                        isPlayer={blood.isPlayer || false} 
+                        onComplete={() => removeBloodEffect(blood.id)}
                     />
                 ))}
                 {currentMap.map((row, y) => row.map((tile, x) => (
@@ -1051,6 +1081,7 @@ const Game = () => {
     const [musicEnabled, setMusicEnabled] = useState(true);
     
     const [shards, setShards] = useState([]);
+    const [bloodEffects, setBloodEffects] = useState([]);
     const [coins, setCoins] = useState([]);
     const [playerHpVisible, setPlayerHpVisible] = useState(false);
     const [enemyHpVisible, setEnemyHpVisible] = useState({});
@@ -1118,7 +1149,7 @@ const Game = () => {
                         
                         if (newHp <= 0) {
                             // Враг умер - создаём эффекты
-                            setShards(s => [...s, { id: Date.now(), x: en.x, y: en.y }]);
+                            setBloodEffects(b => [...b, { id: Date.now(), x: en.x, y: en.y, isPlayer: false }]);
                             
                             // Монеты - летят к счётчику монет (🪙) в HUD
                             const hudCoinX = 125;
@@ -1304,6 +1335,7 @@ const Game = () => {
         setEnemies(newEnemies);
         setPet({ x: levelData.playerStart.x - 30, y: levelData.playerStart.y });
         setShards([]);
+        setBloodEffects([]);
         setCoins([]);
     };
 
@@ -1327,6 +1359,7 @@ const Game = () => {
         });
         setGameState('menu');
         setShards([]);
+        setBloodEffects([]);
         setCoins([]);
         setIsShaking(false);
         setPlayerHpVisible(false);
@@ -1424,6 +1457,10 @@ const Game = () => {
         setShards(prev => prev.filter(s => s.id !== shardId));
     }, []);
 
+    const removeBloodEffect = useCallback((bloodId) => {
+        setBloodEffects(prev => prev.filter(b => b.id !== bloodId));
+    }, []);
+
     const removeCoin = useCallback((coinId) => {
         setCoins(prev => prev.filter(c => c.id !== coinId));
     }, []);
@@ -1443,6 +1480,7 @@ const Game = () => {
             if (player.hp <= 0) {
                 setIsShaking(true);
                 SFXManager.playDeath();
+                setBloodEffects(b => [...b, { id: Date.now(), x: player.x, y: player.y, isPlayer: true }]);
                 setTimeout(() => setGameState('dead'), 800);
                 return;
             }
@@ -1678,6 +1716,7 @@ const Game = () => {
     const handleStartLevel = (levelId) => {
         // Сбрасываем состояние перед началом уровня
         setShards([]);
+        setBloodEffects([]);
         setCoins([]);
         setPlayerHpVisible(false);
         setEnemyHpVisible({});
@@ -1696,6 +1735,7 @@ const Game = () => {
         }
         // Сбрасываем эффекты при выходе в меню
         setShards([]);
+        setBloodEffects([]);
         setCoins([]);
     };
 
@@ -1784,9 +1824,9 @@ const Game = () => {
                         isAttacking={isAttacking}
                         playerHpVisible={playerHpVisible}
                         enemyHpVisible={enemyHpVisible}
-                        shards={shards}
+                        bloodEffects={bloodEffects}
                         coins={coins}
-                        removeShard={removeShard}
+                        removeBloodEffect={removeBloodEffect}
                         removeCoin={removeCoin}
                         gameState={gameState}
                         onOpenShop={handleOpenShop}
