@@ -1588,6 +1588,15 @@ const Game = () => {
                             if (canMoveTo(newEn.x + vx, newEn.y + vy, currentMap)) { 
                                 newEn.x += vx; 
                                 newEn.y += vy; 
+                            } else {
+                                // Если путь заблокирован - отходим в случайном направлении
+                                const retreatAngle = Math.atan2(-dy, -dx) + (Math.random() - 0.5) * Math.PI;
+                                const retreatX = newEn.x + Math.cos(retreatAngle) * speed;
+                                const retreatY = newEn.y + Math.sin(retreatAngle) * speed;
+                                if (canMoveTo(retreatX, retreatY, currentMap)) {
+                                    newEn.x = retreatX;
+                                    newEn.y = retreatY;
+                                }
                             }
                         }
                     } else {
