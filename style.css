@@ -451,13 +451,14 @@ body { margin: 0; background: #0a0a0a; overflow: hidden; font-family: 'Cinzel', 
 .shop-item-name {
     font-size: 16px;
     font-weight: bold;
-    color: #ddd;
+    color: #fff;
     margin-bottom: 8px;
     letter-spacing: 1px;
+    text-shadow: 0 0 5px rgba(255,255,255,0.1);
 }
 .shop-item-desc {
     font-size: 12px;
-    color: #777;
+    color: #999;
     margin-bottom: 15px;
     line-height: 1.5;
     min-height: 35px;
@@ -547,7 +548,7 @@ body { margin: 0; background: #0a0a0a; overflow: hidden; font-family: 'Cinzel', 
     border: 1px solid #333;
     border-radius: 8px;
     font-size: 13px;
-    color: #aaa;
+    color: #ccc;
 }
 .shop-inventory-item-icon {
     font-size: 20px;
@@ -1283,34 +1284,122 @@ body { margin: 0; background: #0a0a0a; overflow: hidden; font-family: 'Cinzel', 
     }
     
     /* Магазин */
-    .shop {
-        padding: 30px 15px;
+    .shop-overlay {
+        overflow: hidden;
     }
     
-    .shop-title {
-        font-size: 24px;
-        margin-bottom: 20px;
-    }
-    
-    .shop-items {
-        grid-template-columns: 1fr;
+    .shop-header {
+        padding: 15px 20px;
+        flex-direction: column;
         gap: 15px;
     }
     
-    .shop-item {
+    .shop-title-area {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .shop-title {
+        font-size: 20px;
+        letter-spacing: 2px;
+    }
+    
+    .shop-gold {
+        font-size: 16px;
+        padding: 8px 15px;
+    }
+    
+    .shop-nav {
+        padding: 0 10px;
+        overflow-x: auto;
+        width: 100%;
+    }
+    
+    .shop-nav-btn {
+        padding: 12px 20px;
+        font-size: 12px;
+        letter-spacing: 1px;
+        white-space: nowrap;
+    }
+    
+    .shop-content {
+        padding: 15px;
+        gap: 15px;
+        flex-direction: column;
+        overflow: hidden;
+    }
+    
+    .shop-items-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+        overflow-y: auto;
+        padding-right: 5px;
+        max-height: calc(100vh - 200px);
+    }
+    
+    .shop-item-card {
         padding: 15px;
     }
     
+    .shop-item-icon {
+        width: 50px;
+        height: 50px;
+        font-size: 28px;
+        margin-bottom: 10px;
+    }
+    
     .shop-item-name {
-        font-size: 16px;
+        font-size: 14px;
+        color: #fff;
+        margin-bottom: 6px;
     }
     
     .shop-item-desc {
-        font-size: 12px;
+        font-size: 11px;
+        color: #aaa;
+        margin-bottom: 10px;
+        min-height: 30px;
+    }
+    
+    .shop-item-rarity {
+        font-size: 9px;
+        padding: 3px 8px;
+        margin-bottom: 10px;
     }
     
     .shop-item-price {
         font-size: 14px;
+        margin-bottom: 10px;
+    }
+    
+    .shop-buy-btn {
+        padding: 10px;
+        font-size: 11px;
+        letter-spacing: 1px;
+    }
+    
+    .shop-sidebar {
+        width: 100%;
+        max-height: 150px;
+        padding: 15px;
+    }
+    
+    .shop-sidebar-title {
+        font-size: 14px;
+        margin-bottom: 10px;
+    }
+    
+    .shop-inventory-list {
+        gap: 8px;
+    }
+    
+    .shop-inventory-item {
+        padding: 8px;
+        font-size: 12px;
+    }
+    
+    .shop-inventory-item-icon {
+        font-size: 16px;
     }
     
     /* HUD */
@@ -1629,18 +1718,101 @@ body { margin: 0; background: #0a0a0a; overflow: hidden; font-family: 'Cinzel', 
 
 /* Дополнительная адаптация для мобильных устройств */
 @media (max-width: 1024px) and (orientation: landscape) {
-    .shop {
+    .shop-overlay {
+        overflow: hidden;
+    }
+    
+    .shop-header {
+        padding: 10px 20px;
+        flex-direction: row;
+    }
+    
+    .shop-title-area {
+        width: auto;
+    }
+    
+    .shop-title {
+        font-size: 18px;
+    }
+    
+    .shop-gold {
+        font-size: 14px;
+        padding: 6px 12px;
+    }
+    
+    .shop-nav {
+        padding: 0 10px;
+    }
+    
+    .shop-nav-btn {
+        padding: 8px 15px;
+        font-size: 11px;
+    }
+    
+    .shop-content {
+        padding: 10px 15px;
+        flex-direction: row;
+        overflow: hidden;
+    }
+    
+    .shop-items-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
         overflow-y: auto;
-        max-height: 90vh;
-        padding: 10px;
+        max-height: calc(100vh - 150px);
     }
     
-    .shop-items {
-        grid-template-columns: repeat(4, 1fr);
-        gap: 8px;
+    .shop-item-card {
+        padding: 12px;
     }
     
-    .shop-item {
+    .shop-item-icon {
+        width: 45px;
+        height: 45px;
+        font-size: 24px;
+        margin-bottom: 8px;
+    }
+    
+    .shop-item-name {
+        font-size: 12px;
+    }
+    
+    .shop-item-desc {
+        font-size: 10px;
+        min-height: 25px;
+    }
+    
+    .shop-item-rarity {
+        font-size: 8px;
+        padding: 2px 6px;
+    }
+    
+    .shop-item-price {
+        font-size: 12px;
+    }
+    
+    .shop-buy-btn {
         padding: 8px;
+        font-size: 10px;
+    }
+    
+    .shop-sidebar {
+        width: 200px;
+        max-height: calc(100vh - 150px);
+        padding: 12px;
+    }
+    
+    .shop-sidebar-title {
+        font-size: 12px;
+        margin-bottom: 8px;
+    }
+    
+    .shop-inventory-item {
+        padding: 6px;
+        font-size: 11px;
+    }
+    
+    .shop-inventory-item-icon {
+        font-size: 14px;
     }
 }
