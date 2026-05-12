@@ -1254,9 +1254,10 @@ body { margin: 0; background: #0a0a0a; overflow: hidden; font-family: 'Cinzel', 
 @media (max-width: 768px) {
     /* Главное меню */
     .menu-title {
-        font-size: 36px;
-        letter-spacing: 12px;
-        margin-bottom: 40px;
+        font-size: 32px;
+        letter-spacing: 8px;
+        margin-bottom: 30px;
+        margin-top: 20px;
     }
     
     .menu-btn {
@@ -1307,6 +1308,7 @@ body { margin: 0; background: #0a0a0a; overflow: hidden; font-family: 'Cinzel', 
     .shop-gold {
         font-size: 16px;
         padding: 8px 15px;
+        margin-left: auto;
     }
     
     .shop-nav {
@@ -1330,51 +1332,59 @@ body { margin: 0; background: #0a0a0a; overflow: hidden; font-family: 'Cinzel', 
     }
     
     .shop-items-grid {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 12px;
-        overflow-y: auto;
+        grid-template-columns: 1fr;
+        gap: 15px;
+        overflow-x: auto;
+        overflow-y: hidden;
         padding-right: 5px;
-        max-height: calc(100vh - 200px);
+        max-height: calc(100vh - 250px);
+        display: flex;
+        flex-direction: row;
+        scroll-snap-type: x mandatory;
     }
     
     .shop-item-card {
-        padding: 15px;
+        padding: 20px;
+        min-width: 280px;
+        max-width: 280px;
+        scroll-snap-align: start;
+        flex-shrink: 0;
     }
     
     .shop-item-icon {
-        width: 50px;
-        height: 50px;
-        font-size: 28px;
-        margin-bottom: 10px;
+        width: 60px;
+        height: 60px;
+        font-size: 32px;
+        margin-bottom: 12px;
     }
     
     .shop-item-name {
-        font-size: 14px;
+        font-size: 16px;
         color: #fff;
-        margin-bottom: 6px;
+        margin-bottom: 8px;
     }
     
     .shop-item-desc {
-        font-size: 11px;
+        font-size: 12px;
         color: #aaa;
-        margin-bottom: 10px;
-        min-height: 30px;
+        margin-bottom: 12px;
+        min-height: 35px;
     }
     
     .shop-item-rarity {
-        font-size: 9px;
-        padding: 3px 8px;
-        margin-bottom: 10px;
+        font-size: 10px;
+        padding: 4px 10px;
+        margin-bottom: 12px;
     }
     
     .shop-item-price {
-        font-size: 14px;
-        margin-bottom: 10px;
+        font-size: 16px;
+        margin-bottom: 12px;
     }
     
     .shop-buy-btn {
-        padding: 10px;
-        font-size: 11px;
+        padding: 12px;
+        font-size: 12px;
         letter-spacing: 1px;
     }
     
@@ -1738,6 +1748,7 @@ body { margin: 0; background: #0a0a0a; overflow: hidden; font-family: 'Cinzel', 
     .shop-gold {
         font-size: 14px;
         padding: 6px 12px;
+        margin-left: auto;
     }
     
     .shop-nav {
@@ -1756,49 +1767,57 @@ body { margin: 0; background: #0a0a0a; overflow: hidden; font-family: 'Cinzel', 
     }
     
     .shop-items-grid {
-        grid-template-columns: repeat(3, 1fr);
-        gap: 10px;
-        overflow-y: auto;
-        max-height: calc(100vh - 150px);
+        grid-template-columns: 1fr;
+        gap: 15px;
+        overflow-x: auto;
+        overflow-y: hidden;
+        max-height: calc(100vh - 120px);
+        display: flex;
+        flex-direction: row;
+        scroll-snap-type: x mandatory;
     }
     
     .shop-item-card {
-        padding: 12px;
+        padding: 15px;
+        min-width: 250px;
+        max-width: 250px;
+        scroll-snap-align: start;
+        flex-shrink: 0;
     }
     
     .shop-item-icon {
-        width: 45px;
-        height: 45px;
-        font-size: 24px;
-        margin-bottom: 8px;
+        width: 50px;
+        height: 50px;
+        font-size: 28px;
+        margin-bottom: 10px;
     }
     
     .shop-item-name {
-        font-size: 12px;
+        font-size: 14px;
     }
     
     .shop-item-desc {
-        font-size: 10px;
-        min-height: 25px;
+        font-size: 11px;
+        min-height: 30px;
     }
     
     .shop-item-rarity {
-        font-size: 8px;
-        padding: 2px 6px;
+        font-size: 9px;
+        padding: 3px 8px;
     }
     
     .shop-item-price {
-        font-size: 12px;
+        font-size: 14px;
     }
     
     .shop-buy-btn {
-        padding: 8px;
-        font-size: 10px;
+        padding: 10px;
+        font-size: 11px;
     }
     
     .shop-sidebar {
         width: 200px;
-        max-height: calc(100vh - 150px);
+        max-height: calc(100vh - 120px);
         padding: 12px;
     }
     
