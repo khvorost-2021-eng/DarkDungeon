@@ -406,26 +406,19 @@ const HPBar = ({ hp, maxHp, isVisible }) => {
 };
 
 const BloodParticles = ({ x, y, isPlayer = false, onComplete }) => {
-    const [opacity, setOpacity] = useState(1);
+    const [isVisible, setIsVisible] = useState(true);
     
     useEffect(() => {
-        // Fade out over 2 seconds
+        // Remove after animation
         const timer = setTimeout(() => {
-            setOpacity(0);
-        }, 100);
-        
-        // Remove after fade out
-        const removeTimer = setTimeout(() => {
+            setIsVisible(false);
             if (onComplete) onComplete();
-        }, 2100);
+        }, 700);
         
-        return () => {
-            clearTimeout(timer);
-            clearTimeout(removeTimer);
-        };
+        return () => clearTimeout(timer);
     }, [onComplete]);
     
-    if (opacity <= 0) return null;
+    if (!isVisible) return null;
     
     // Generate particles on render
     const particleCount = isPlayer ? 20 + Math.floor(Math.random() * 10) : 8 + Math.floor(Math.random() * 5);
@@ -455,12 +448,22 @@ const BloodParticles = ({ x, y, isPlayer = false, onComplete }) => {
                         top: p.y + 'px',
                         width: p.size + 'px',
                         height: p.size + 'px',
-                        opacity: opacity,
-                        transform: 'translate(-50%, -50%)',
-                        transition: 'opacity 2s ease-out'
+                        animation: 'blood-fade 0.7s ease-out forwards'
                     }}
                 />
             ))}
+            <style>{`
+                @keyframes blood-fade {
+                    0% {
+                        opacity: 1;
+                        transform: translate(-50%, -50%) scale(1);
+                    }
+                    100% {
+                        opacity: 0;
+                        transform: translate(-50%, -50%) scale(0.3);
+                    }
+                }
+            `}</style>
         </>
     );
 };
