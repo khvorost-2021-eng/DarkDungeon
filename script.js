@@ -1,5 +1,117 @@
 const { useState, useEffect, useRef, useCallback, useReducer } = React;
 
+// ========== МОБИЛЬНЫЕ КОНТРОЛЫ ==========
+const VirtualJoystick = ({ onMove }) => {
+    const joystickRef = useRef(null);
+    const handleRef = useRef(null);
+    const isActive = useRef(false);
+    
+    useEffect(() => {
+        const joystick = joystickRef.current;
+        const handle = handleRef.current;
+        if (!joystick || !handle) return;
+        
+        const handleStart = (e) => {
+            e.preventDefault();
+            isActive.current = true;
+        };
+        
+        const handleMove = (e) => {
+            if (!isActive.current) return;
+            e.preventDefault();
+            
+            const touch = e.touches ? e.touches[0] : e;
+            const rect = joystick.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+            
+            let deltaX = touch.clientX - centerX;
+            let deltaY = touch.clientY - centerY;
+            
+            const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+            const maxDistance = rect.width / 2 - 25;
+            
+            if (distance > maxDistance) {
+                deltaX = (deltaX / distance) * maxDistance;
+                deltaY = (deltaY / distance) * maxDistance;
+            }
+            
+            handle.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+            
+            const normalizedX = deltaX / maxDistance;
+            const normalizedY = deltaY / maxDistance;
+            
+            onMove({ x: normalizedX, y: normalizedY });
+        };
+        
+        const handleEnd = (e) => {
+            e.preventDefault();
+            isActive.current = false;
+            handle.style.transform = 'translate(0, 0)';
+            onMove({ x: 0, y: 0 });
+        };
+        
+        // Touch события
+        joystick.addEventListener('touchstart', handleStart, { passive: false });
+        joystick.addEventListener('touchmove', handleMove, { passive: false });
+        joystick.addEventListener('touchend', handleEnd, { passive: false });
+        joystick.addEventListener('touchcancel', handleEnd, { passive: false });
+        
+        // Mouse события (для тестирования)
+        joystick.addEventListener('mousedown', handleStart);
+        document.addEventListener('mousemove', handleMove);
+        document.addEventListener('mouseup', handleEnd);
+        
+        return () => {
+            joystick.removeEventListener('touchstart', handleStart);
+            joystick.removeEventListener('touchmove', handleMove);
+            joystick.removeEventListener('touchend', handleEnd);
+            joystick.removeEventListener('touchcancel', handleEnd);
+            joystick.removeEventListener('mousedown', handleStart);
+            document.removeEventListener('mousemove', handleMove);
+            document.removeEventListener('mouseup', handleEnd);
+        };
+    }, [onMove]);
+    
+    return (
+        <div className="joystick-container" ref={joystickRef}>
+            <div className="joystick-base">
+                <div className="joystick-handle" ref={handleRef} />
+            </div>
+        </div>
+    );
+};
+
+const MobileAttackButton = ({ onAttack }) => {
+    const handleAttack = useCallback((e) => {
+        e.preventDefault();
+        onAttack();
+    }, [onAttack]);
+    
+    return (
+        <div className="attack-button-container">
+            <button 
+                className="attack-button" 
+                onTouchStart={handleAttack}
+                onMouseDown={handleAttack}
+            >
+                УДАР
+            </button>
+        </div>
+    );
+};
+
+const MobileControls = ({ onMove, onAttack, isVisible }) => {
+    if (!isVisible) return null;
+    
+    return (
+        <div className="mobile-controls">
+            <VirtualJoystick onMove={onMove} />
+            <MobileAttackButton onAttack={onAttack} />
+        </div>
+    );
+};
+
 // ========== МУЗЫКАЛЬНЫЙ МЕНЕДЖЕР ==========
 const MusicManager = {
     audioContext: null,
@@ -971,10 +1083,43 @@ const Game = () => {
     // Force update для гарантии рендеринга
     const [, forceUpdate] = useReducer(x => x + 1, 0);
     
+    // Мобильные контролы
+    const [isMobile, setIsMobile] = useState(false);
+    const [joystickInput, setJoystickInput] = useState({ x: 0, y: 0 });
+    
     const keys = useRef({});
     const playerHpTimer = useRef(null);
     const enemyHpTimers = useRef({});
     const gameLoopRef = useRef(null);
+    
+    // Определение мобильного устройства
+    useEffect(() => {
+        const checkMobile = () => {
+            const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+            const isSmallScreen = window.innerWidth <= 768;
+            setIsMobile(isTouchDevice && isSmallScreen);
+        };
+        
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        window.addEventListener('orientationchange', checkMobile);
+        
+        return () => {
+            window.removeEventListener('resize', checkMobile);
+            window.removeEventListener('orientationchange', checkMobile);
+        };
+    }, []);
+    
+    // Обработчики мобильных контролей
+    const handleJoystickMove = useCallback((input) => {
+        setJoystickInput(input);
+    }, []);
+    
+    const handleMobileAttack = useCallback(() => {
+        if (gameState === 'playing') {
+            handleAttack();
+        }
+    }, [gameState, handleAttack]);
 
     // Формулы сложности
     const calculateEnemyStats = (levelId) => {
@@ -1284,10 +1429,18 @@ const Game = () => {
             const s = 4;
             setPlayer(prev => {
                 let nx = prev.x, ny = prev.y;
+                
+                // Клавиатурное управление
                 if (keys.current['ArrowUp'] || keys.current['KeyW']) ny -= s;
                 if (keys.current['ArrowDown'] || keys.current['KeyS']) ny += s;
                 if (keys.current['ArrowLeft'] || keys.current['KeyA']) nx -= s;
                 if (keys.current['ArrowRight'] || keys.current['KeyD']) nx += s;
+                
+                // Мобильное управление (джойстик)
+                if (isMobile && (joystickInput.x !== 0 || joystickInput.y !== 0)) {
+                    nx += joystickInput.x * s;
+                    ny += joystickInput.y * s;
+                }
                 
                 const newX = canMoveTo(nx, prev.y, currentMap) ? nx : prev.x;
                 const newY = canMoveTo(prev.x, ny, currentMap) ? ny : prev.y;
@@ -1560,28 +1713,35 @@ const Game = () => {
             )}
 
             {gameState === 'playing' && (
-                <GameWorld
-                    player={player}
-                    pet={pet}
-                    enemies={enemies}
-                    playerSkinClass={playerSkinClass}
-                    petSkinClass={getPetClass()}
-                    equippedPet={equippedPet}
-                    equippedWeapon={equippedWeapon}
-                    playerName={playerName}
-                    isAttacking={isAttacking}
-                    playerHpVisible={playerHpVisible}
-                    enemyHpVisible={enemyHpVisible}
-                    shards={shards}
-                    bloodEffects={bloodEffects}
-                    coins={coins}
-                    removeShard={removeShard}
-                    removeCoin={removeCoin}
-                    gameState={gameState}
-                    onOpenShop={handleOpenShop}
-                    onExitToMenu={handleExitToMenu}
-                    currentMap={currentMap}
-                />
+                <>
+                    <GameWorld
+                        player={player}
+                        pet={pet}
+                        enemies={enemies}
+                        playerSkinClass={playerSkinClass}
+                        petSkinClass={getPetClass()}
+                        equippedPet={equippedPet}
+                        equippedWeapon={equippedWeapon}
+                        playerName={playerName}
+                        isAttacking={isAttacking}
+                        playerHpVisible={playerHpVisible}
+                        enemyHpVisible={enemyHpVisible}
+                        shards={shards}
+                        bloodEffects={bloodEffects}
+                        coins={coins}
+                        removeShard={removeShard}
+                        removeCoin={removeCoin}
+                        gameState={gameState}
+                        onOpenShop={handleOpenShop}
+                        onExitToMenu={handleExitToMenu}
+                        currentMap={currentMap}
+                    />
+                    <MobileControls 
+                        onMove={handleJoystickMove}
+                        onAttack={handleMobileAttack}
+                        isVisible={isMobile}
+                    />
+                </>
             )}
         </div>
     );

@@ -1248,3 +1248,317 @@ body { margin: 0; background: #0a0a0a; overflow: hidden; font-family: 'Cinzel', 
     margin-bottom: 5px;
     letter-spacing: 1px;
 }
+
+/* ========== МОБИЛЬНАЯ АДАПТАЦИЯ ========== */
+@media (max-width: 768px) {
+    /* Главное меню */
+    .menu-title {
+        font-size: 36px;
+        letter-spacing: 12px;
+        margin-bottom: 40px;
+    }
+    
+    .menu-btn {
+        padding: 18px 50px;
+        font-size: 16px;
+        min-width: 200px;
+    }
+    
+    /* Уровни */
+    .level-title {
+        font-size: 24px;
+        margin-bottom: 20px;
+    }
+    
+    .level-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 15px;
+        padding: 0 20px;
+    }
+    
+    .level-card {
+        width: 80px;
+        height: 80px;
+        font-size: 18px;
+    }
+    
+    /* Магазин */
+    .shop {
+        padding: 30px 15px;
+    }
+    
+    .shop-title {
+        font-size: 24px;
+        margin-bottom: 20px;
+    }
+    
+    .shop-items {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+    
+    .shop-item {
+        padding: 15px;
+    }
+    
+    .shop-item-name {
+        font-size: 16px;
+    }
+    
+    .shop-item-desc {
+        font-size: 12px;
+    }
+    
+    .shop-item-price {
+        font-size: 14px;
+    }
+    
+    /* HUD */
+    .hud {
+        top: 10px;
+        left: 10px;
+        right: 10px;
+        font-size: 14px;
+        padding: 8px 12px;
+    }
+    
+    .hud-stats {
+        font-size: 12px;
+    }
+    
+    .game-buttons {
+        top: 60px;
+        right: 10px;
+        gap: 10px;
+    }
+    
+    .btn-open-shop, .btn-exit-menu {
+        padding: 12px 16px;
+        font-size: 12px;
+        min-width: 80px;
+    }
+    
+    /* Настройки */
+    .settings-title {
+        font-size: 24px;
+        margin-bottom: 30px;
+    }
+    
+    .settings-input {
+        padding: 12px 16px;
+        font-size: 14px;
+    }
+    
+    .settings-toggle {
+        padding: 12px 24px;
+        font-size: 12px;
+    }
+    
+    /* Экраны смерти и победы */
+    .death-title, .victory-title {
+        font-size: 32px;
+    }
+    
+    .death-subtitle, .victory-subtitle {
+        font-size: 16px;
+    }
+    
+    .death-stats, .victory-stats {
+        font-size: 14px;
+    }
+    
+    .death-btn, .victory-btn {
+        padding: 15px 30px;
+        font-size: 14px;
+    }
+}
+
+@media (max-width: 480px) {
+    /* Главное меню */
+    .menu-title {
+        font-size: 28px;
+        letter-spacing: 8px;
+    }
+    
+    .menu-btn {
+        padding: 15px 40px;
+        font-size: 14px;
+        min-width: 160px;
+    }
+    
+    /* Уровни */
+    .level-title {
+        font-size: 20px;
+    }
+    
+    .level-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+        padding: 0 15px;
+    }
+    
+    .level-card {
+        width: 70px;
+        height: 70px;
+        font-size: 16px;
+    }
+    
+    /* Магазин */
+    .shop {
+        padding: 20px 10px;
+    }
+    
+    .shop-title {
+        font-size: 20px;
+    }
+    
+    .shop-item {
+        padding: 12px;
+    }
+    
+    /* HUD */
+    .hud {
+        font-size: 12px;
+        padding: 6px 10px;
+    }
+    
+    .hud-stats {
+        font-size: 10px;
+    }
+    
+    .game-buttons {
+        top: 50px;
+        gap: 8px;
+    }
+    
+    .btn-open-shop, .btn-exit-menu {
+        padding: 10px 12px;
+        font-size: 10px;
+        min-width: 70px;
+    }
+}
+
+/* ========== МОБИЛЬНЫЕ КОНТРОЛЫ ========== */
+.mobile-controls {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 200px;
+    pointer-events: none;
+    z-index: 1000;
+}
+
+.joystick-container {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    width: 120px;
+    height: 120px;
+    pointer-events: all;
+}
+
+.joystick-base {
+    position: absolute;
+    width: 120px;
+    height: 120px;
+    background: rgba(0, 0, 0, 0.6);
+    border: 2px solid #666;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.joystick-handle {
+    position: absolute;
+    width: 50px;
+    height: 50px;
+    background: rgba(255, 255, 255, 0.8);
+    border: 2px solid #999;
+    border-radius: 50%;
+    transition: none;
+    pointer-events: none;
+}
+
+.attack-button-container {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    width: 80px;
+    height: 80px;
+    pointer-events: all;
+}
+
+.attack-button {
+    width: 80px;
+    height: 80px;
+    background: rgba(139, 0, 0, 0.8);
+    border: 3px solid #8b0000;
+    border-radius: 50%;
+    color: white;
+    font-family: 'Cinzel', 'Georgia', serif;
+    font-size: 12px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+    transition: all 0.1s;
+}
+
+.attack-button:active {
+    background: rgba(255, 0, 0, 0.9);
+    transform: scale(0.95);
+}
+
+/* Скрыть мобильные контролы на десктопе */
+@media (min-width: 769px) {
+    .mobile-controls {
+        display: none;
+    }
+}
+
+/* Адаптация для разных ориентаций */
+@media (orientation: landscape) and (max-height: 600px) {
+    .mobile-controls {
+        height: 150px;
+    }
+    
+    .joystick-container {
+        bottom: 10px;
+        left: 10px;
+        width: 100px;
+        height: 100px;
+    }
+    
+    .joystick-base {
+        width: 100px;
+        height: 100px;
+    }
+    
+    .joystick-handle {
+        width: 40px;
+        height: 40px;
+    }
+    
+    .attack-button-container {
+        bottom: 10px;
+        right: 10px;
+        width: 60px;
+        height: 60px;
+    }
+    
+    .attack-button {
+        width: 60px;
+        height: 60px;
+        font-size: 10px;
+    }
+    
+    .hud {
+        top: 5px;
+        font-size: 10px;
+    }
+}
