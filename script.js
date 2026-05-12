@@ -1262,7 +1262,7 @@ const Game = () => {
                             const hudCoinY = 35;
                             const worldOffsetX = -player.x + window.innerWidth / 2;
                             const worldOffsetY = -player.y + window.innerHeight / 2;
-                            const coinId = Date.now();
+                            const coinId = Date.now() + Math.random();
                             setCoins(c => [...c, {
                                 id: coinId,
                                 startX: en.x + worldOffsetX,
@@ -1741,7 +1741,7 @@ const Game = () => {
                                         const hudCoinY = 35;
                                         const worldOffsetX = -player.x + window.innerWidth / 2;
                                         const worldOffsetY = -player.y + window.innerHeight / 2;
-                                        const coinId = Date.now();
+                                        const coinId = Date.now() + Math.random();
                                         setCoins(c => [...c, {
                                             id: coinId,
                                             startX: en.x + worldOffsetX,

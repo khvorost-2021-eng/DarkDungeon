@@ -579,13 +579,19 @@ body { margin: 0; background: #0a0a0a; overflow: hidden; font-family: 'Cinzel', 
     box-shadow: 0 4px 15px rgba(0,0,0,0.5);
 }
 .player-skin { 
+    width: 100%;
+    height: 100%;
     background: linear-gradient(145deg, #3d5a80 0%, #2c4a6e 100%); 
     border: 2px solid #4a6fa5; 
+    border-radius: 50%;
     box-shadow: 0 0 20px rgba(61,90,128,0.4);
 }
 .player-skin-dark { 
+    width: 100%;
+    height: 100%;
     background: linear-gradient(145deg, #1a1a1a 0%, #0d0d0d 100%); 
     border: 2px solid #8b0000; 
+    border-radius: 50%;
     box-shadow: 0 0 25px rgba(139,0,0,0.5);
 }
 .player-skin-dark .eye { 
@@ -657,6 +663,8 @@ body { margin: 0; background: #0a0a0a; overflow: hidden; font-family: 'Cinzel', 
 
 /* Враг */
 .enemy-skin { 
+    width: 100%;
+    height: 100%;
     background: linear-gradient(145deg, #4a0000 0%, #2c0000 100%); 
     border: 2px solid #8b0000; 
     border-radius: 50%; 
