@@ -934,25 +934,25 @@ const GameWorld = ({
 
     // Информация о расходуемых предметах для отображения
     const consumableItemsInfo = {
-        'hp-potion': { icon: '🧪', name: 'Зелье здоровья' },
-        'big-hp-potion': { icon: '🧴', name: 'Большое зелье' },
-        'strength-potion': { icon: '💪', name: 'Зелье силы' },
-        'invincibility': { icon: '👻', name: 'Невидимость' },
-        'vampire-ring': { icon: '💍', name: 'Кольцо вампира' },
-        'speed-boots': { icon: '👢', name: 'Ботинки скорости' },
-        'crit-amulet': { icon: '📿', name: 'Амулет крита' },
-        'dragon-heart': { icon: '🐉', name: 'Сердце дракона' }
+        'hp-potion': { icon: '🧪', name: 'Зелье здоровья', order: 1 },
+        'big-hp-potion': { icon: '🧴', name: 'Большое зелье', order: 2 },
+        'strength-potion': { icon: '💪', name: 'Зелье силы', order: 3 },
+        'invincibility': { icon: '👻', name: 'Невидимость', order: 4 },
+        'vampire-ring': { icon: '💍', name: 'Кольцо вампира', order: 5 },
+        'speed-boots': { icon: '👢', name: 'Ботинки скорости', order: 6 },
+        'crit-amulet': { icon: '📿', name: 'Амулет крита', order: 7 },
+        'dragon-heart': { icon: '🐉', name: 'Сердце дракона', order: 8 }
     };
 
-    // Получаем список предметов с количеством > 0
+    // Получаем список предметов с количеством > 0, отсортированные по фиксированному порядку
     const availableItems = Object.entries(consumables)
         .filter(([_, quantity]) => quantity > 0)
-        .map(([id, quantity], index) => ({
+        .map(([id, quantity]) => ({
             id,
             quantity,
-            ...consumableItemsInfo[id],
-            index
-        }));
+            ...consumableItemsInfo[id]
+        }))
+        .sort((a, b) => a.order - b.order);
 
 
     // Используем forceUpdate для обновления позиции
@@ -967,27 +967,29 @@ const GameWorld = ({
 
     return (
         <>
-            <div className="hud">
+            <div className="hud"> 
                 <div className="hud-player-name">👤 {playerName || 'Игрок'}</div>
                 <div>❤️ {Math.max(0, Math.floor(player.hp))} | 🪙 {player.money || 0}</div>
                 <div className="hud-stats">
                     ⚔️ {player.dmg} | 🛡️ {player.shield > 0 ? Math.round(player.shield * 100) + '%' : '0%'}
                 </div>
-                {!isMobile && availableItems.length > 0 && (
-                    <div className="hud-items">
-                        {availableItems.slice(0, 5).map((item, idx) => (
-                            <div 
-                                key={item.id} 
-                                className="hud-item"
-                                onClick={() => useItem(item.id)}
-                                title={`${item.name} (нажмите ${idx + 1})`}
-                            >
-                                {item.icon}x{item.quantity}
-                            </div>
-                        ))}
-                    </div>
-                )}
             </div>
+            
+            {!isMobile && availableItems.length > 0 && (
+                <div className="abilities-bar">
+                    {availableItems.slice(0, 9).map((item, idx) => (
+                        <div 
+                            key={item.id} 
+                            className="ability-slot"
+                            onClick={() => useItem(item.id)}
+                        >
+                            <div className="ability-number">{idx + 1}</div>
+                            <div className="ability-icon">{item.icon}</div>
+                            <div className="ability-count">x{item.quantity}</div>
+                        </div>
+                    ))}
+                </div>
+            )}
             <div className="game-buttons">
                 <button className="btn-open-shop" onClick={onOpenShop}>МАГАЗИН</button>
                 <button className="btn-exit-menu" onClick={onExitToMenu}>МЕНЮ</button>
@@ -1008,6 +1010,7 @@ const GameWorld = ({
                                 className="ability-item"
                                 onClick={() => useItem(item.id)}
                             >
+                                <span className="ability-number">{idx + 1}</span>
                                 <span className="ability-icon">{item.icon}</span>
                                 <span className="ability-name">{item.name}</span>
                                 <span className="ability-quantity">x{item.quantity}</span>
@@ -1139,20 +1142,34 @@ const Game = () => {
         joystickInput.current = input;
     }, []);
 
-    // Обработка клавиш для использования предметов (1-5)
+    // Обработка клавиш для использования предметов (1-9)
     useEffect(() => {
         const handleKeyDown = (e) => {
             if (gameState !== 'playing') return;
             
             const key = e.key;
-            if (key >= '1' && key <= '5') {
+            if (key >= '1' && key <= '9') {
                 const index = parseInt(key) - 1;
+                
+                // Фиксированный порядок предметов
+                const consumableItemsInfo = {
+                    'hp-potion': { order: 1 },
+                    'big-hp-potion': { order: 2 },
+                    'strength-potion': { order: 3 },
+                    'invincibility': { order: 4 },
+                    'vampire-ring': { order: 5 },
+                    'speed-boots': { order: 6 },
+                    'crit-amulet': { order: 7 },
+                    'dragon-heart': { order: 8 }
+                };
+                
                 const availableItems = Object.entries(consumables)
                     .filter(([_, quantity]) => quantity > 0)
-                    .map(([id]) => id);
+                    .map(([id]) => ({ id, ...consumableItemsInfo[id] }))
+                    .sort((a, b) => a.order - b.order);
                 
                 if (index < availableItems.length) {
-                    useItem(availableItems[index]);
+                    useItem(availableItems[index].id);
                 }
             }
         };
