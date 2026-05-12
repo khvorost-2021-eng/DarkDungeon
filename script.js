@@ -1048,24 +1048,6 @@ const GameWorld = ({
             </div>
             <div className="fog" />
 
-            {shards.map(shard => (
-                <EnemyShards 
-                    key={shard.id} 
-                    x={shard.x} 
-                    y={shard.y} 
-                    onComplete={() => removeShard(shard.id)} 
-                />
-            ))}
-
-            {bloodEffects.map(blood => (
-                <BloodParticles 
-                    key={blood.id} 
-                    x={blood.x} 
-                    y={blood.y} 
-                    isPlayer={blood.isPlayer || false} 
-                />
-            ))}
-
             {coins.map(coin => (
                 <Coin 
                     key={coin.id}
@@ -1080,6 +1062,23 @@ const GameWorld = ({
             <div id="game-world" style={{ 
                 transform: `translate(${-player.x + window.innerWidth/2}px, ${-player.y + window.innerHeight/2}px)` 
             }}>
+                {shards.map(shard => (
+                    <EnemyShards 
+                        key={shard.id} 
+                        x={shard.x} 
+                        y={shard.y} 
+                        onComplete={() => removeShard(shard.id)} 
+                    />
+                ))}
+
+                {bloodEffects.map(blood => (
+                    <BloodParticles 
+                        key={blood.id} 
+                        x={blood.x} 
+                        y={blood.y} 
+                        isPlayer={blood.isPlayer || false} 
+                    />
+                ))}
                 {currentMap.map((row, y) => row.map((tile, x) => (
                     tile === 1 && <div key={`${x}-${y}`} className="tile wall" style={{ left: x*60, top: y*60 }} />
                 )))}
