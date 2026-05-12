@@ -439,33 +439,26 @@ const EnemyShards = ({ x, y, onComplete }) => {
 };
 
 const BloodParticles = ({ x, y, isPlayer = false, onComplete }) => {
-    const [opacity, setOpacity] = useState(1);
+    const [isVisible, setIsVisible] = useState(true);
     
     useEffect(() => {
-        // Fade out over 1 second
+        // Remove after animation completes
         const timer = setTimeout(() => {
-            setOpacity(0);
-        }, 200);
-        
-        // Remove after fade out
-        const removeTimer = setTimeout(() => {
+            setIsVisible(false);
             if (onComplete) onComplete();
-        }, 1200);
+        }, 1000);
         
-        return () => {
-            clearTimeout(timer);
-            clearTimeout(removeTimer);
-        };
+        return () => clearTimeout(timer);
     }, [onComplete]);
     
-    if (opacity <= 0) return null;
+    if (!isVisible) return null;
     
     // Generate particles on render
     const particleCount = isPlayer ? 15 + Math.floor(Math.random() * 11) : 5 + Math.floor(Math.random() * 6);
     const particles = Array.from({ length: particleCount }, (_, i) => {
         const angle = Math.random() * Math.PI * 2;
-        const distance = 40 + Math.random() * 60;
-        const size = 8 + Math.random() * 4;
+        const distance = 30 + Math.random() * 40;
+        const size = 6 + Math.random() * 4; // 6-10px
         const offsetX = Math.cos(angle) * distance;
         const offsetY = Math.sin(angle) * distance;
         return {
@@ -488,12 +481,22 @@ const BloodParticles = ({ x, y, isPlayer = false, onComplete }) => {
                         top: p.y + 'px',
                         width: p.size + 'px',
                         height: p.size + 'px',
-                        opacity: opacity,
-                        transform: 'translate(-50%, -50%)',
-                        transition: 'opacity 1s ease-out'
+                        animation: 'blood-fade 1s ease-out forwards'
                     }}
                 />
             ))}
+            <style>{`
+                @keyframes blood-fade {
+                    0% {
+                        opacity: 1;
+                        transform: translate(-50%, -50%) scale(1);
+                    }
+                    100% {
+                        opacity: 0;
+                        transform: translate(-50%, -50%) scale(0.5);
+                    }
+                }
+            `}</style>
         </>
     );
 };
