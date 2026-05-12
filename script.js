@@ -439,19 +439,26 @@ const EnemyShards = ({ x, y, onComplete }) => {
 };
 
 const BloodParticles = ({ x, y, isPlayer = false, onComplete }) => {
-    const [isVisible, setIsVisible] = useState(true);
+    const [opacity, setOpacity] = useState(1);
     
     useEffect(() => {
-        // Remove after 1 second
+        // Fade out over 1 second
         const timer = setTimeout(() => {
-            setIsVisible(false);
-            if (onComplete) onComplete();
-        }, 1000);
+            setOpacity(0);
+        }, 200);
         
-        return () => clearTimeout(timer);
+        // Remove after fade out
+        const removeTimer = setTimeout(() => {
+            if (onComplete) onComplete();
+        }, 1200);
+        
+        return () => {
+            clearTimeout(timer);
+            clearTimeout(removeTimer);
+        };
     }, [onComplete]);
     
-    if (!isVisible) return null;
+    if (opacity <= 0) return null;
     
     // Generate particles on render
     const particleCount = isPlayer ? 15 + Math.floor(Math.random() * 11) : 5 + Math.floor(Math.random() * 6);
@@ -459,16 +466,13 @@ const BloodParticles = ({ x, y, isPlayer = false, onComplete }) => {
         const angle = Math.random() * Math.PI * 2;
         const distance = 40 + Math.random() * 60;
         const size = 8 + Math.random() * 4;
-        const endX = x + Math.cos(angle) * distance;
-        const endY = y + Math.sin(angle) * distance;
+        const offsetX = Math.cos(angle) * distance;
+        const offsetY = Math.sin(angle) * distance;
         return {
             id: i,
-            startX: x,
-            startY: y,
-            endX: endX,
-            endY: endY,
-            size: size,
-            delay: Math.random() * 0.1
+            x: x + offsetX,
+            y: y + offsetY,
+            size: size
         };
     });
     
@@ -480,34 +484,16 @@ const BloodParticles = ({ x, y, isPlayer = false, onComplete }) => {
                     className="blood-particle"
                     style={{
                         position: 'absolute',
-                        left: p.startX + 'px',
-                        top: p.startY + 'px',
+                        left: p.x + 'px',
+                        top: p.y + 'px',
                         width: p.size + 'px',
                         height: p.size + 'px',
-                        animation: `blood-particle-anim 0.8s ease-out ${p.delay}s forwards`,
-                        '--start-x': p.startX + 'px',
-                        '--start-y': p.startY + 'px',
-                        '--end-x': p.endX + 'px',
-                        '--end-y': p.endY + 'px'
+                        opacity: opacity,
+                        transform: 'translate(-50%, -50%)',
+                        transition: 'opacity 1s ease-out'
                     }}
                 />
             ))}
-            <style>{`
-                @keyframes blood-particle-anim {
-                    0% {
-                        left: var(--start-x);
-                        top: var(--start-y);
-                        opacity: 1;
-                        transform: translate(-50%, -50%) scale(1);
-                    }
-                    100% {
-                        left: var(--end-x);
-                        top: var(--end-y);
-                        opacity: 0;
-                        transform: translate(-50%, -50%) scale(0);
-                    }
-                }
-            `}</style>
         </>
     );
 };
