@@ -438,7 +438,7 @@ const EnemyShards = ({ x, y, onComplete }) => {
     );
 };
 
-const BloodParticles = ({ x, y, isPlayer = false }) => {
+const BloodParticles = ({ x, y, isPlayer = false, onComplete }) => {
     const [particles, setParticles] = useState([]);
     
     useEffect(() => {
@@ -462,11 +462,16 @@ const BloodParticles = ({ x, y, isPlayer = false }) => {
         });
         setParticles(newParticles);
         
-        // Clear particles after animation
-        const timer = setTimeout(() => setParticles([]), 800);
+        // Clear particles after animation and call onComplete
+        const timer = setTimeout(() => {
+            setParticles([]);
+            if (onComplete) onComplete();
+        }, 900);
         
         return () => clearTimeout(timer);
-    }, [x, y, isPlayer]);
+    }, [x, y, isPlayer, onComplete]);
+    
+    if (particles.length === 0) return null;
     
     return (
         <>
@@ -1013,7 +1018,7 @@ const VictoryScreen = ({ onNextLevel, onMenu, level, coinsEarned }) => (
 const GameWorld = ({
     player, pet, enemies, playerSkinClass, petSkinClass, equippedPet, equippedWeapon, playerName,
     isAttacking, playerHpVisible, enemyHpVisible,
-    shards, bloodEffects, coins, removeShard, removeCoin,
+    shards, bloodEffects, coins, removeShard, removeCoin, removeBloodEffect,
     gameState, onOpenShop, onExitToMenu, currentMap
 }) => {
     if (gameState !== 'playing') return null;
@@ -1077,6 +1082,7 @@ const GameWorld = ({
                         x={blood.x} 
                         y={blood.y} 
                         isPlayer={blood.isPlayer || false} 
+                        onComplete={() => removeBloodEffect(blood.id)}
                     />
                 ))}
                 {currentMap.map((row, y) => row.map((tile, x) => (
@@ -1510,6 +1516,10 @@ const Game = () => {
         setCoins(prev => prev.filter(c => c.id !== coinId));
     }, []);
 
+    const removeBloodEffect = useCallback((bloodId) => {
+        setBloodEffects(prev => prev.filter(b => b.id !== bloodId));
+    }, []);
+
     // Игровой цикл - основной фикс движения
     useEffect(() => {
         if (gameState !== 'playing') {
@@ -1875,6 +1885,7 @@ const Game = () => {
                         coins={coins}
                         removeShard={removeShard}
                         removeCoin={removeCoin}
+                        removeBloodEffect={removeBloodEffect}
                         gameState={gameState}
                         onOpenShop={handleOpenShop}
                         onExitToMenu={handleExitToMenu}
