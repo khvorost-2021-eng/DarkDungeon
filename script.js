@@ -438,17 +438,22 @@ const EnemyShards = ({ x, y, onComplete }) => {
     );
 };
 
-const BloodParticles = ({ x, y }) => {
+const BloodParticles = ({ x, y, isPlayer = false }) => {
     const [particles, setParticles] = useState([]);
     useEffect(() => {
-        const particleCount = 4 + Math.floor(Math.random() * 4);
+        // 15-25 particles for player, 5-10 for enemy
+        const particleCount = isPlayer ? 15 + Math.floor(Math.random() * 11) : 5 + Math.floor(Math.random() * 6);
         const newParticles = Array.from({ length: particleCount }, (_, i) => ({
-            id: i, angle: Math.random() * Math.PI * 2, distance: 30 + Math.random() * 50, delay: Math.random() * 0.1
+            id: i, 
+            angle: Math.random() * Math.PI * 2, 
+            distance: 50 + Math.random() * 80,
+            size: 8 + Math.random() * 4, // 8-12px
+            delay: Math.random() * 0.1
         }));
         setParticles(newParticles);
-        const timer = setTimeout(() => setParticles([]), 500);
+        const timer = setTimeout(() => setParticles([]), 1000); // Disappear after 1s
         return () => clearTimeout(timer);
-    }, [x, y]);
+    }, [x, y, isPlayer]);
     return (
         <>
             {particles.map(p => {
@@ -456,8 +461,16 @@ const BloodParticles = ({ x, y }) => {
                 const dy = Math.sin(p.angle) * p.distance;
                 return (
                     <div key={p.id} className="blood-particle"
-                        style={{ position: 'absolute', left: x, top: y,
-                            animation: `blood-fly 0.4s ease-out ${p.delay}s forwards`, ['--dx']: `${dx}px`, ['--dy']: `${dy}px` }} />
+                        style={{ 
+                            position: 'absolute', 
+                            left: x, 
+                            top: y,
+                            width: `${p.size}px`,
+                            height: `${p.size}px`,
+                            animation: `blood-fly 0.8s ease-out ${p.delay}s forwards`, 
+                            ['--dx']: `${dx}px`, 
+                            ['--dy']: `${dy}px` 
+                        }} />
                 );
             })}
             <style>{`
@@ -1020,7 +1033,7 @@ const GameWorld = ({
             ))}
 
             {bloodEffects.map(blood => (
-                <BloodParticles key={blood.id} x={blood.x} y={blood.y} />
+                <BloodParticles key={blood.id} x={blood.x} y={blood.y} isPlayer={blood.isPlayer || false} />
             ))}
 
             {coins.map(coin => (
@@ -1156,7 +1169,7 @@ const Game = () => {
                         if (newHp <= 0) {
                             // Враг умер - создаём эффекты
                             setShards(s => [...s, { id: Date.now(), x: en.x, y: en.y }]);
-                            setBloodEffects(b => [...b, { id: Date.now(), x: en.x, y: en.y }]);
+                            setBloodEffects(b => [...b, { id: Date.now(), x: en.x, y: en.y, isPlayer: false }]);
                             
                             // Монеты - летят к счётчику монет (🪙) в HUD
                             const hudCoinX = 125;
@@ -1181,7 +1194,8 @@ const Game = () => {
                             return null;
                         }
                         
-                        return { ...en, hp: newHp };
+                        // Враг получил урон - переходим в панику на 1-2 секунды
+                        return { ...en, hp: newHp, panicTimer: 1000 + Math.random() * 1000 };
                     }
                     return en;
                 }).filter(Boolean);
@@ -1229,6 +1243,24 @@ const Game = () => {
         return !pts.some(pt => map[Math.floor(pt.y/60)]?.[Math.floor(pt.x/60)] === 1);
     };
 
+    const canReachPlayer = (enemyX, enemyY, playerX, playerY, map) => {
+        // Simple line-of-sight check - check points along the line
+        const dx = playerX - enemyX;
+        const dy = playerY - enemyY;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        const steps = Math.ceil(dist / 20); // Check every 20px
+        
+        for (let i = 1; i < steps; i++) {
+            const t = i / steps;
+            const checkX = enemyX + dx * t;
+            const checkY = enemyY + dy * t;
+            if (!canMoveTo(checkX, checkY, map)) {
+                return false;
+            }
+        }
+        return true;
+    };
+
     const showPlayerHpBar = useCallback(() => {
         setPlayerHpVisible(true);
         if (playerHpTimer.current) clearTimeout(playerHpTimer.current);
@@ -1249,19 +1281,27 @@ const Game = () => {
         setCurrentLevel(levelId);
         setCoinsEarned(0);
 
-        // Устанавливаем позицию игрока
+        // Устанавливаем позицию игрока и сбрасываем HP
+        const playerStart = levelData.playerStart;
         setPlayer(prev => ({
             ...prev,
-            x: levelData.playerStart.x,
-            y: levelData.playerStart.y
+            x: playerStart.x,
+            y: playerStart.y,
+            hp: 100,
+            maxHp: 100
         }));
 
         // Создаём врагов
         const stats = calculateEnemyStats(levelId);
         const enemyPositions = levelData.enemies || [];
 
-        // Валидация позиций врагов - проверяем что они не на стенах
-        const validEnemyPositions = enemyPositions.filter(pos => canMoveTo(pos.x, pos.y, levelData.map));
+        // Валидация позиций врагов - проверяем что они не на стенах и не слишком близко к игроку
+        const validEnemyPositions = enemyPositions.filter(pos => {
+            if (!canMoveTo(pos.x, pos.y, levelData.map)) return false;
+            // Check distance to player >= 80px
+            const distToPlayer = Math.sqrt((pos.x - playerStart.x)**2 + (pos.y - playerStart.y)**2);
+            return distToPlayer >= 80;
+        });
         
         // Гарантируем минимум 3 врага или столько, сколько было в уровне
         const targetEnemyCount = Math.max(3, enemyPositions.length);
@@ -1271,8 +1311,13 @@ const Game = () => {
         let attempts = 0;
         while (finalPositions.length < targetEnemyCount && attempts < 100) {
             const patrolPos = getPatrolTarget(levelData.map);
-            if (patrolPos && !finalPositions.some(p => Math.abs(p.x - patrolPos.x) < 30 && Math.abs(p.y - patrolPos.y) < 30)) {
-                finalPositions.push(patrolPos);
+            if (patrolPos && 
+                !finalPositions.some(p => Math.abs(p.x - patrolPos.x) < 30 && Math.abs(p.y - patrolPos.y) < 30)) {
+                // Check distance to player >= 80px
+                const distToPlayer = Math.sqrt((patrolPos.x - playerStart.x)**2 + (patrolPos.y - playerStart.y)**2);
+                if (distToPlayer >= 80) {
+                    finalPositions.push(patrolPos);
+                }
             }
             attempts++;
         }
@@ -1285,7 +1330,7 @@ const Game = () => {
                 y: pos.y,
                 hp: stats.hp,
                 maxHp: stats.hp,
-                state: 'idle',
+                state: 'patrol',
                 angle: angle,
                 patrolDirX: Math.cos(angle),
                 patrolDirY: Math.sin(angle),
@@ -1293,7 +1338,8 @@ const Game = () => {
                 isAttacking: false,
                 patrolTarget: null,
                 damage: stats.damage,
-                speed: stats.speed
+                speed: stats.speed,
+                panicTimer: 0
             };
         });
         
@@ -1441,6 +1487,8 @@ const Game = () => {
             if (player.hp <= 0) {
                 setIsShaking(true);
                 SFXManager.playDeath();
+                // Add blood particles for player death
+                setBloodEffects(b => [...b, { id: Date.now(), x: player.x, y: player.y, isPlayer: true }]);
                 setTimeout(() => setGameState('dead'), 800);
                 return;
             }
@@ -1485,14 +1533,26 @@ const Game = () => {
                     }
                     
                     if (newEn.attackCooldown > 0) newEn.attackCooldown -= 16;
+                    if (newEn.panicTimer > 0) newEn.panicTimer -= 16;
 
                     const dx = player.x - newEn.x;
                     const dy = player.y - newEn.y;
                     const dist = Math.sqrt(dx*dx + dy*dy);
+                    const canReach = canReachPlayer(newEn.x, newEn.y, player.x, player.y, currentMap);
 
-                    if (dist < 100) {
+                    // State machine
+                    if (newEn.panicTimer > 0) {
+                        // PANIC state - enemy was damaged, just patrol
+                        newEn.state = 'panic';
+                    } else if (dist < 100 && canReach) {
+                        // CHASE state - can see and reach player
                         newEn.state = 'chase';
-                        
+                    } else {
+                        // PATROL state - default behavior
+                        newEn.state = 'patrol';
+                    }
+
+                    if (newEn.state === 'chase') {
                         // Атака
                         if (dist < 50 && newEn.attackCooldown <= 0 && !newEn.isAttacking) {
                             newEn.isAttacking = true;
@@ -1530,8 +1590,7 @@ const Game = () => {
                             }
                         }
                     } else {
-                        // Патрулирование - враги всегда двигаются независимо от игрока
-                        newEn.state = 'patrol';
+                        // PATROL or PANIC - same movement logic
                         newEn.isAttacking = false;
                         
                         // Плавное движение по кругу с проверкой на стены
@@ -1546,13 +1605,13 @@ const Game = () => {
                         
                         // Плавное движение к цели
                         const moveSpeed = (newEn.speed || 1.8) * 0.3;
-                        const dx = targetX - newEn.x;
-                        const dy = targetY - newEn.y;
-                        const dist = Math.sqrt(dx*dx + dy*dy);
+                        const pdx = targetX - newEn.x;
+                        const pdy = targetY - newEn.y;
+                        const pdist = Math.sqrt(pdx*pdx + pdy*pdy);
                         
-                        if (dist > 0) {
-                            const moveX = newEn.x + (dx / dist) * moveSpeed;
-                            const moveY = newEn.y + (dy / dist) * moveSpeed;
+                        if (pdist > 0) {
+                            const moveX = newEn.x + (pdx / pdist) * moveSpeed;
+                            const moveY = newEn.y + (pdy / pdist) * moveSpeed;
                             
                             // Проверяем можно ли двигаться
                             if (canMoveTo(moveX, moveY, currentMap)) {

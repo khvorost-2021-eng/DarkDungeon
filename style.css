@@ -777,13 +777,13 @@ body { margin: 0; background: #0a0a0a; overflow: hidden; font-family: 'Cinzel', 
 /* Кровь */
 .blood-particle {
     position: absolute;
-    width: 6px;
-    height: 6px;
-    background: radial-gradient(circle, #a00000 0%, #600000 100%);
+    width: 10px;
+    height: 10px;
+    background: radial-gradient(circle, #ff0000 0%, #cc0000 50%, #880000 100%);
     border-radius: 50%;
     pointer-events: none;
     z-index: 15;
-    box-shadow: 0 0 8px rgba(160,0,0,0.6);
+    box-shadow: 0 0 15px rgba(255,0,0,0.8);
 }
 
 /* Монеты */
