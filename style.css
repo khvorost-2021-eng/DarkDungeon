@@ -782,7 +782,7 @@ body { margin: 0; background: #0a0a0a; overflow: hidden; font-family: 'Cinzel', 
     background: radial-gradient(circle, #ff0000 0%, #cc0000 50%, #880000 100%);
     border-radius: 50%;
     pointer-events: none;
-    z-index: 15;
+    z-index: 100;
     box-shadow: 0 0 15px rgba(255,0,0,0.8);
 }
 

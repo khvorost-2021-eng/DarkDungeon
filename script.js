@@ -438,52 +438,70 @@ const EnemyShards = ({ x, y, onComplete }) => {
     );
 };
 
-const BloodParticles = ({ x, y, isPlayer = false, onComplete }) => {
+const BloodParticles = ({ x, y, isPlayer = false }) => {
     const [particles, setParticles] = useState([]);
     
     useEffect(() => {
         // 15-25 particles for player, 5-10 for enemy
         const particleCount = isPlayer ? 15 + Math.floor(Math.random() * 11) : 5 + Math.floor(Math.random() * 6);
-        const newParticles = Array.from({ length: particleCount }, (_, i) => ({
-            id: i, 
-            angle: Math.random() * Math.PI * 2, 
-            distance: 40 + Math.random() * 60,
-            size: 8 + Math.random() * 4, // 8-12px
-            delay: Math.random() * 0.05
-        }));
+        const newParticles = Array.from({ length: particleCount }, (_, i) => {
+            const angle = Math.random() * Math.PI * 2;
+            const distance = 40 + Math.random() * 60;
+            const size = 8 + Math.random() * 4;
+            const endX = x + Math.cos(angle) * distance;
+            const endY = y + Math.sin(angle) * distance;
+            return {
+                id: i,
+                startX: x,
+                startY: y,
+                endX: endX,
+                endY: endY,
+                size: size,
+                delay: Math.random() * 0.1
+            };
+        });
         setParticles(newParticles);
         
-        // Call onComplete after animation completes
-        const timer = setTimeout(() => {
-            if (onComplete) onComplete();
-        }, 800);
+        // Clear particles after animation
+        const timer = setTimeout(() => setParticles([]), 800);
         
         return () => clearTimeout(timer);
-    }, [x, y, isPlayer, onComplete]);
+    }, [x, y, isPlayer]);
     
     return (
         <>
-            {particles.map(p => {
-                const dx = Math.cos(p.angle) * p.distance;
-                const dy = Math.sin(p.angle) * p.distance;
-                return (
-                    <div key={p.id} className="blood-particle"
-                        style={{ 
-                            position: 'absolute', 
-                            left: x, 
-                            top: y,
-                            width: `${p.size}px`,
-                            height: `${p.size}px`,
-                            animation: `blood-fly 0.8s ease-out ${p.delay}s forwards`, 
-                            ['--dx']: `${dx}px`, 
-                            ['--dy']: `${dy}px` 
-                        }} />
-                );
-            })}
+            {particles.map(p => (
+                <div 
+                    key={p.id} 
+                    className="blood-particle"
+                    style={{
+                        position: 'absolute',
+                        left: p.startX + 'px',
+                        top: p.startY + 'px',
+                        width: p.size + 'px',
+                        height: p.size + 'px',
+                        animation: `blood-particle-anim 0.8s ease-out ${p.delay}s forwards`,
+                        '--start-x': p.startX + 'px',
+                        '--start-y': p.startY + 'px',
+                        '--end-x': p.endX + 'px',
+                        '--end-y': p.endY + 'px'
+                    }}
+                />
+            ))}
             <style>{`
-                @keyframes blood-fly {
-                    0% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
-                    100% { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(0); opacity: 0; }
+                @keyframes blood-particle-anim {
+                    0% {
+                        left: var(--start-x);
+                        top: var(--start-y);
+                        opacity: 1;
+                        transform: translate(-50%, -50%) scale(1);
+                    }
+                    100% {
+                        left: var(--end-x);
+                        top: var(--end-y);
+                        opacity: 0;
+                        transform: translate(-50%, -50%) scale(0);
+                    }
                 }
             `}</style>
         </>
@@ -995,7 +1013,7 @@ const VictoryScreen = ({ onNextLevel, onMenu, level, coinsEarned }) => (
 const GameWorld = ({
     player, pet, enemies, playerSkinClass, petSkinClass, equippedPet, equippedWeapon, playerName,
     isAttacking, playerHpVisible, enemyHpVisible,
-    shards, bloodEffects, coins, removeShard, removeCoin, removeBloodEffect,
+    shards, bloodEffects, coins, removeShard, removeCoin,
     gameState, onOpenShop, onExitToMenu, currentMap
 }) => {
     if (gameState !== 'playing') return null;
@@ -1045,7 +1063,6 @@ const GameWorld = ({
                     x={blood.x} 
                     y={blood.y} 
                     isPlayer={blood.isPlayer || false} 
-                    onComplete={() => removeBloodEffect(blood.id)}
                 />
             ))}
 
@@ -1494,10 +1511,6 @@ const Game = () => {
         setCoins(prev => prev.filter(c => c.id !== coinId));
     }, []);
 
-    const removeBloodEffect = useCallback((bloodId) => {
-        setBloodEffects(prev => prev.filter(b => b.id !== bloodId));
-    }, []);
-
     // Игровой цикл - основной фикс движения
     useEffect(() => {
         if (gameState !== 'playing') {
@@ -1863,7 +1876,6 @@ const Game = () => {
                         coins={coins}
                         removeShard={removeShard}
                         removeCoin={removeCoin}
-                        removeBloodEffect={removeBloodEffect}
                         gameState={gameState}
                         onOpenShop={handleOpenShop}
                         onExitToMenu={handleExitToMenu}
