@@ -1194,8 +1194,9 @@ const Game = () => {
                             return null;
                         }
                         
-                        // Враг получил урон - продолжаем преследовать
-                        return { ...en, hp: newHp };
+                        // Враг получил урон - если путь заблокирован, убегаем с ускорением
+                        const canReach = canReachPlayer(en.x, en.y, player.x, player.y, currentMap);
+                        return { ...en, hp: newHp, retreatTimer: canReach ? 0 : 1500 };
                     }
                     return en;
                 }).filter(Boolean);
@@ -1338,7 +1339,8 @@ const Game = () => {
                 isAttacking: false,
                 patrolTarget: null,
                 damage: stats.damage,
-                speed: stats.speed
+                speed: stats.speed,
+                retreatTimer: 0
             };
         });
         
@@ -1532,6 +1534,7 @@ const Game = () => {
                     }
                     
                     if (newEn.attackCooldown > 0) newEn.attackCooldown -= 16;
+                    if (newEn.retreatTimer > 0) newEn.retreatTimer -= 16;
 
                     const dx = player.x - newEn.x;
                     const dy = player.y - newEn.y;
@@ -1539,7 +1542,10 @@ const Game = () => {
                     const canReach = canReachPlayer(newEn.x, newEn.y, player.x, player.y, currentMap);
 
                     // State machine
-                    if (dist < 100) {
+                    if (newEn.retreatTimer > 0) {
+                        // RETREAT state - enemy was damaged and path blocked, run away fast
+                        newEn.state = 'retreat';
+                    } else if (dist < 100) {
                         // Can see player
                         if (canReach) {
                             // Can reach player - chase
@@ -1553,7 +1559,17 @@ const Game = () => {
                         newEn.state = 'patrol';
                     }
 
-                    if (newEn.state === 'chase') {
+                    if (newEn.state === 'retreat') {
+                        // Убегаем от игрока с ускорением x2
+                        const speed = (newEn.speed || 1.8) * 2;
+                        const retreatAngle = Math.atan2(-dy, -dx) + (Math.random() - 0.5) * Math.PI * 0.5;
+                        const retreatX = newEn.x + Math.cos(retreatAngle) * speed;
+                        const retreatY = newEn.y + Math.sin(retreatAngle) * speed;
+                        if (canMoveTo(retreatX, retreatY, currentMap)) {
+                            newEn.x = retreatX;
+                            newEn.y = retreatY;
+                        }
+                    } else if (newEn.state === 'chase') {
                         // Атака
                         if (dist < 50 && newEn.attackCooldown <= 0 && !newEn.isAttacking) {
                             newEn.isAttacking = true;
