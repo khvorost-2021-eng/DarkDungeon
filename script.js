@@ -18,13 +18,18 @@ const DynamicJoystick = ({ onMove }) => {
             
             // Проверяем, что касание НЕ на кнопке (приоритет кнопок)
             if (touch.target.closest('.attack-button') || 
+                touch.target.closest('.attack-button-container') ||
                 touch.target.closest('.btn-abilities') ||
-                touch.target.closest('.abilities-panel')) {
+                touch.target.closest('.abilities-button-container') ||
+                touch.target.closest('.abilities-panel') ||
+                touch.target.closest('.game-buttons') ||
+                touch.target.closest('.btn-open-shop') ||
+                touch.target.closest('.btn-exit-menu')) {
                 return;
             }
             
-            // Проверяем, что касание в левой половине экрана (для движения)
-            if (touch.clientX > window.innerWidth / 2) return;
+            // Проверяем, что касание в правой половине экрана (для движения)
+            if (touch.clientX < window.innerWidth / 2) return;
             
             e.preventDefault();
             isActive.current = true;
@@ -1955,7 +1960,7 @@ const Game = () => {
 
             // Убрано forceUpdate для оптимизации - React сам перерисовывает при изменении state
 
-        }, 30); // Увеличено с 16ms до 30ms для оптимизации (30fps достаточно)
+        }, 16); // Возвращено к 16ms для более плавного движения
 
         return () => {
             if (gameLoopRef.current) {
