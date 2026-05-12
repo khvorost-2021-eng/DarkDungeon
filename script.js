@@ -106,8 +106,20 @@ const MobileControls = ({ onMove, onAttack, isVisible }) => {
     
     return (
         <div className="mobile-controls">
-            <VirtualJoystick onMove={onMove} />
             <MobileAttackButton onAttack={onAttack} />
+            <VirtualJoystick onMove={onMove} />
+        </div>
+    );
+};
+
+const RotationWarning = ({ isVisible }) => {
+    if (!isVisible) return null;
+    
+    return (
+        <div className="rotation-warning">
+            <div className="rotation-icon">↻</div>
+            <div className="rotation-text">Поверните устройство</div>
+            <div className="rotation-subtext">Для лучшего игрового опыта</div>
         </div>
     );
 };
@@ -1085,7 +1097,8 @@ const Game = () => {
     
     // Мобильные контролы
     const [isMobile, setIsMobile] = useState(false);
-    const [joystickInput, setJoystickInput] = useState({ x: 0, y: 0 });
+    const joystickInput = useRef({ x: 0, y: 0 });
+    const [isPortrait, setIsPortrait] = useState(false);
     
     const keys = useRef({});
     const playerHpTimer = useRef(null);
@@ -1096,16 +1109,19 @@ const Game = () => {
     useEffect(() => {
         const checkMobile = () => {
             const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-            const isMobileWidth = window.innerWidth <= 1024; // Увеличим порог для планшетов
+            const isMobileWidth = window.innerWidth <= 1024;
             setIsMobile(isTouchDevice && isMobileWidth);
             
+            // Отслеживание ориентации
+            const isPortraitMode = window.innerHeight > window.innerWidth;
+            setIsPortrait(isPortraitMode);
+            
             // Принудительная горизонтальная ориентация для мобильных
-            if (isTouchDevice && isMobileWidth) {
-                // Пытаемся заблокировать горизонтальную ориентацию
+            if (isTouchDevice && isMobileWidth && isPortraitMode) {
+                // Не блокируем ориентацию, просто показываем предупреждение
                 if (screen.orientation && screen.orientation.lock) {
                     screen.orientation.lock('landscape').catch(() => {
-                        // Если не удалось заблокировать, показываем предупреждение
-                        console.log('Пожалуйста, поверните устройство в горизонтальную ориентацию');
+                        // Если не удалось заблокировать, предупреждение покажется через UI
                     });
                 }
             }
@@ -1123,7 +1139,7 @@ const Game = () => {
     
     // Обработчики мобильных контролов
     const handleJoystickMove = useCallback((input) => {
-        setJoystickInput(input);
+        joystickInput.current = input;
     }, []);
     
     const handleAttack = useCallback(() => {
@@ -1443,9 +1459,9 @@ const Game = () => {
                 if (keys.current['ArrowRight'] || keys.current['KeyD']) nx += s;
                 
                 // Мобильное управление (джойстик)
-                if (isMobile && (joystickInput.x !== 0 || joystickInput.y !== 0)) {
-                    nx += joystickInput.x * s;
-                    ny += joystickInput.y * s;
+                if (isMobile && (joystickInput.current.x !== 0 || joystickInput.current.y !== 0)) {
+                    nx += joystickInput.current.x * s;
+                    ny += joystickInput.current.y * s;
                 }
                 
                 const newX = canMoveTo(nx, prev.y, currentMap) ? nx : prev.x;
@@ -1662,11 +1678,13 @@ const Game = () => {
     };
 
     return (
-        <div id="viewport" className={isShaking ? 'screen-shake' : ''}>
+        <div id="viewport">
+            <RotationWarning isVisible={isMobile && isPortrait} />
+            
             {gameState === 'menu' && (
-                <MainMenu
-                    onPlay={() => setGameState('levels')}
-                    onShop={handleOpenShop}
+                <MainMenu 
+                    onSelectLevels={() => setGameState('levels')}
+                    onSelectShop={() => setGameState('shop')}
                     onSettings={() => setGameState('settings')}
                 />
             )}
