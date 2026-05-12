@@ -440,7 +440,6 @@ const EnemyShards = ({ x, y, onComplete }) => {
 
 const BloodParticles = ({ x, y, isPlayer = false, onComplete }) => {
     const [particles, setParticles] = useState([]);
-    const [isVisible, setIsVisible] = useState(true);
     
     useEffect(() => {
         // 15-25 particles for player, 5-10 for enemy
@@ -454,16 +453,13 @@ const BloodParticles = ({ x, y, isPlayer = false, onComplete }) => {
         }));
         setParticles(newParticles);
         
-        // Remove entire component after animation completes
+        // Call onComplete after animation completes
         const timer = setTimeout(() => {
-            setIsVisible(false);
             if (onComplete) onComplete();
         }, 800);
         
         return () => clearTimeout(timer);
     }, [x, y, isPlayer, onComplete]);
-    
-    if (!isVisible) return null;
     
     return (
         <>
