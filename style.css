@@ -1002,6 +1002,109 @@ body { margin: 0; background: #0a0a0a; overflow: hidden; font-family: 'Cinzel', 
 }
 .hud-stats { margin-top: 8px; font-size: 13px; color: #888; }
 
+.hud-items {
+    margin-top: 8px;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.hud-item {
+    background: linear-gradient(145deg, #1a1a1a 0%, #0d0d0d 100%);
+    border: 1px solid #444;
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+    user-select: none;
+}
+
+.hud-item:hover {
+    border-color: #8b0000;
+    box-shadow: 0 0 10px rgba(139,0,0,0.3);
+    transform: translateY(-2px);
+}
+
+.btn-abilities {
+    padding: 12px 15px;
+    font-size: 20px;
+    background: linear-gradient(145deg, #d4af37 0%, #b8941f 100%);
+    color: #000;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s;
+    box-shadow: 0 4px 15px rgba(212,175,55,0.3);
+}
+
+.btn-abilities:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 25px rgba(212,175,55,0.5);
+}
+
+.abilities-panel {
+    position: fixed;
+    top: 80px;
+    right: 20px;
+    background: linear-gradient(145deg, #1a1a1a 0%, #0d0d0d 100%);
+    border: 2px solid #444;
+    border-radius: 12px;
+    padding: 15px;
+    z-index: 150;
+    min-width: 200px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+}
+
+.abilities-header {
+    font-size: 14px;
+    color: #d4af37;
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #333;
+    text-align: center;
+    letter-spacing: 2px;
+}
+
+.abilities-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.ability-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    background: rgba(26,26,26,0.8);
+    border: 1px solid #333;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.ability-item:hover {
+    border-color: #8b0000;
+    background: rgba(139,0,0,0.1);
+}
+
+.ability-icon {
+    font-size: 20px;
+}
+
+.ability-name {
+    flex: 1;
+    font-size: 13px;
+    color: #ccc;
+}
+
+.ability-quantity {
+    font-size: 12px;
+    color: #d4af37;
+    font-weight: bold;
+}
+
 .game-buttons {
     position: fixed;
     top: 20px;

@@ -722,7 +722,7 @@ const LevelSelect = ({ onBack, onSelectLevel, unlockedLevels }) => {
 };
 
 // ========== МАГАЗИН ==========
-const Shop = ({ money, inventory, equippedPet, equippedWeapon, buyItem, onClose, onEquipPet, onEquipWeapon }) => {
+const Shop = ({ money, inventory, consumables, equippedPet, equippedWeapon, buyItem, onClose, onEquipPet, onEquipWeapon }) => {
     const [activeTab, setActiveTab] = useState('weapons');
 
     const handleClose = () => {
@@ -776,7 +776,16 @@ const Shop = ({ money, inventory, equippedPet, equippedWeapon, buyItem, onClose,
 
     const handleBuy = (item) => {
         const owned = inventory.includes(item.id);
-        if (!owned && money < item.price) {
+        const consumableItems = ['hp-potion', 'big-hp-potion', 'strength-potion', 'invincibility', 
+                                  'vampire-ring', 'speed-boots', 'crit-amulet', 'dragon-heart'];
+        const isConsumable = consumableItems.includes(item.id);
+        
+        if (!isConsumable && owned) {
+            SFXManager.playError();
+            return;
+        }
+        
+        if (money < item.price) {
             SFXManager.playError();
             return;
         }
@@ -790,7 +799,7 @@ const Shop = ({ money, inventory, equippedPet, equippedWeapon, buyItem, onClose,
             onEquipWeapon(item.weaponType);
             if (!owned) SFXManager.playBuy();
         } else {
-            if (!owned) SFXManager.playBuy();
+            SFXManager.playBuy();
         }
         buyItem(item.id, item.price);
     };
@@ -821,13 +830,17 @@ const Shop = ({ money, inventory, equippedPet, equippedWeapon, buyItem, onClose,
                 <div className="shop-items-grid">
                     {currentItems.map(item => {
                         const owned = inventory.includes(item.id);
+                        const consumableItems = ['hp-potion', 'big-hp-potion', 'strength-potion', 'invincibility', 
+                                                  'vampire-ring', 'speed-boots', 'crit-amulet', 'dragon-heart'];
+                        const isConsumable = consumableItems.includes(item.id);
+                        const quantity = consumables[item.id] || 0;
                         const equipped = item.type ? equippedPet === item.type : 
                                         item.weaponType ? equippedWeapon === item.weaponType : false;
                         const canAfford = money >= item.price;
                         return (
                             <div 
                                 key={item.id} 
-                                className={`shop-item-card ${owned ? 'owned' : ''}`}
+                                className={`shop-item-card ${owned && !isConsumable ? 'owned' : ''}`}
                                 style={{ '--rarity-color': getRarityColor(item.rarity) }}
                             >
                                 <div className="shop-item-icon">{item.icon}</div>
@@ -836,11 +849,11 @@ const Shop = ({ money, inventory, equippedPet, equippedWeapon, buyItem, onClose,
                                 <div className="shop-item-desc">{item.desc}</div>
                                 <div className="shop-item-price">{item.price} 🪙</div>
                                 <button 
-                                    className={`shop-buy-btn ${owned ? 'owned' : ''}`}
+                                    className={`shop-buy-btn ${owned && !isConsumable ? 'owned' : ''}`}
                                     onClick={() => handleBuy(item)}
-                                    disabled={!canAfford || owned}
+                                    disabled={!canAfford || (owned && !isConsumable)}
                                 >
-                                    {equipped ? 'ЭКИПИРОВАН' : owned ? 'КУПЛЕНО' : canAfford ? 'КУПИТЬ' : 'НЕДОСТАТОЧНО'}
+                                    {equipped ? 'ЭКИПИРОВАН' : owned && !isConsumable ? 'КУПЛЕНО' : isConsumable && quantity > 0 ? `${quantity} шт.` : canAfford ? 'КУПИТЬ' : 'НЕДОСТАТОЧНО'}
                                 </button>
                             </div>
                         );
@@ -910,7 +923,7 @@ const VictoryScreen = ({ onNextLevel, onMenu, level, coinsEarned }) => (
 const GameWorld = ({
     player, pet, enemies, playerSkinClass, petSkinClass, equippedPet, equippedWeapon, playerName,
     isAttacking, playerHpVisible, enemyHpVisible,
-    coins, removeCoin,
+    coins, removeCoin, consumables, useItem, activeEffects, abilitiesOpen, setAbilitiesOpen, isMobile,
     gameState, onOpenShop, onExitToMenu, currentMap
 }) => {
     if (gameState !== 'playing') return null;
@@ -918,6 +931,28 @@ const GameWorld = ({
     const handleMenuClick = () => {
         onExitToMenu();
     };
+
+    // Информация о расходуемых предметах для отображения
+    const consumableItemsInfo = {
+        'hp-potion': { icon: '🧪', name: 'Зелье здоровья' },
+        'big-hp-potion': { icon: '🧴', name: 'Большое зелье' },
+        'strength-potion': { icon: '💪', name: 'Зелье силы' },
+        'invincibility': { icon: '👻', name: 'Невидимость' },
+        'vampire-ring': { icon: '💍', name: 'Кольцо вампира' },
+        'speed-boots': { icon: '👢', name: 'Ботинки скорости' },
+        'crit-amulet': { icon: '📿', name: 'Амулет крита' },
+        'dragon-heart': { icon: '🐉', name: 'Сердце дракона' }
+    };
+
+    // Получаем список предметов с количеством > 0
+    const availableItems = Object.entries(consumables)
+        .filter(([_, quantity]) => quantity > 0)
+        .map(([id, quantity], index) => ({
+            id,
+            quantity,
+            ...consumableItemsInfo[id],
+            index
+        }));
 
 
     // Используем forceUpdate для обновления позиции
@@ -938,11 +973,49 @@ const GameWorld = ({
                 <div className="hud-stats">
                     ⚔️ {player.dmg} | 🛡️ {player.shield > 0 ? Math.round(player.shield * 100) + '%' : '0%'}
                 </div>
+                {!isMobile && availableItems.length > 0 && (
+                    <div className="hud-items">
+                        {availableItems.slice(0, 5).map((item, idx) => (
+                            <div 
+                                key={item.id} 
+                                className="hud-item"
+                                onClick={() => useItem(item.id)}
+                                title={`${item.name} (нажмите ${idx + 1})`}
+                            >
+                                {item.icon}x{item.quantity}
+                            </div>
+                        ))}
+                    </div>
+                )}
             </div>
             <div className="game-buttons">
                 <button className="btn-open-shop" onClick={onOpenShop}>МАГАЗИН</button>
                 <button className="btn-exit-menu" onClick={onExitToMenu}>МЕНЮ</button>
+                {isMobile && availableItems.length > 0 && (
+                    <button className="btn-abilities" onClick={() => setAbilitiesOpen(!abilitiesOpen)}>
+                        ⚡
+                    </button>
+                )}
             </div>
+            
+            {isMobile && abilitiesOpen && (
+                <div className="abilities-panel">
+                    <div className="abilities-header">Способности</div>
+                    <div className="abilities-list">
+                        {availableItems.map((item, idx) => (
+                            <div 
+                                key={item.id} 
+                                className="ability-item"
+                                onClick={() => useItem(item.id)}
+                            >
+                                <span className="ability-icon">{item.icon}</span>
+                                <span className="ability-name">{item.name}</span>
+                                <span className="ability-quantity">x{item.quantity}</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
             <div className="fog" />
 
             {coins.map(coin => (
@@ -1014,6 +1087,11 @@ const Game = () => {
     const [enemyHpVisible, setEnemyHpVisible] = useState({});
     const [isShaking, setIsShaking] = useState(false);
     const [coinsEarned, setCoinsEarned] = useState(0);
+    
+    // Расходуемые предметы (зелья и артефакты)
+    const [consumables, setConsumables] = useState({});
+    const [activeEffects, setActiveEffects] = useState({}); // Активные эффекты (сила, невидимость и т.д.)
+    const [abilitiesOpen, setAbilitiesOpen] = useState(false); // Окно способностей на мобильной
 
     // Используем useState вместо useRef для позиций (фикс движения)
     const [player, setPlayer] = useState({ x: 90, y: 90, hp: 100, maxHp: 100, dmg: 40, money: 200, shield: 0, currentWeapon: 'stick' });
@@ -1060,6 +1138,28 @@ const Game = () => {
     const handleJoystickMove = useCallback((input) => {
         joystickInput.current = input;
     }, []);
+
+    // Обработка клавиш для использования предметов (1-5)
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            if (gameState !== 'playing') return;
+            
+            const key = e.key;
+            if (key >= '1' && key <= '5') {
+                const index = parseInt(key) - 1;
+                const availableItems = Object.entries(consumables)
+                    .filter(([_, quantity]) => quantity > 0)
+                    .map(([id]) => id);
+                
+                if (index < availableItems.length) {
+                    useItem(availableItems[index]);
+                }
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [gameState, consumables, useItem]);
     
     const handleAttack = useCallback(() => {
         if (isAttacking || gameState !== 'playing') return;
@@ -1071,8 +1171,19 @@ const Game = () => {
                 return prevEnemies.map(en => {
                     const d = Math.sqrt((en.x - player.x)**2 + (en.y - player.y)**2);
                     if (d < 90) {
-                        const newHp = en.hp - player.dmg;
+                        // Критический удар
+                        let damage = player.dmg;
+                        if (activeEffects.crit && Math.random() < 0.25) {
+                            damage *= 2;
+                        }
+                        
+                        const newHp = en.hp - damage;
                         showEnemyHpBar(en.id);
+                        
+                        // Вампиризм - восстановление HP
+                        if (activeEffects.vampire) {
+                            setPlayer(p => ({ ...p, hp: Math.min(p.maxHp, p.hp + Math.floor(damage * 0.3)) }));
+                        }
                         
                         if (newHp <= 0) {
                             // Враг умер - создаём эффекты
@@ -1129,7 +1240,7 @@ const Game = () => {
                 return currentEnemies;
             });
         }, 200);
-    }, [isAttacking, gameState, player.x, player.y, player.dmg, showEnemyHpBar, currentLevel, unlockedLevels]);
+    }, [isAttacking, gameState, player.x, player.y, player.dmg, showEnemyHpBar, currentLevel, unlockedLevels, activeEffects, currentMap]);
     
     const handleMobileAttack = useCallback(() => {
         handleAttack();
@@ -1262,6 +1373,7 @@ const Game = () => {
         setPet({ x: levelData.playerStart.x - 30, y: levelData.playerStart.y });
         setShards([]);
         setCoins([]);
+        setActiveEffects({}); // Сбрасываем активные эффекты при смене уровня
     };
 
     const getPatrolTarget = useCallback((map) => {
@@ -1285,6 +1397,7 @@ const Game = () => {
         setGameState('menu');
         setShards([]);
         setCoins([]);
+        setActiveEffects({}); // Сбрасываем активные эффекты при рестарте
         setIsShaking(false);
         setPlayerHpVisible(false);
         setEnemyHpVisible({});
@@ -1296,7 +1409,19 @@ const Game = () => {
         if (!owned && money >= price) {
             setMoney(m => m - price);
             setPlayer(p => ({ ...p, money: p.money - price }));
-            setInventory(prev => [...prev, itemId]);
+            
+            // Зелья и артефакты добавляем в consumables с количеством
+            const consumableItems = ['hp-potion', 'big-hp-potion', 'strength-potion', 'invincibility', 
+                                      'vampire-ring', 'speed-boots', 'crit-amulet', 'dragon-heart'];
+            
+            if (consumableItems.includes(itemId)) {
+                setConsumables(prev => ({
+                    ...prev,
+                    [itemId]: (prev[itemId] || 0) + 1
+                }));
+            } else {
+                setInventory(prev => [...prev, itemId]);
+            }
 
             // Применяем эффекты только при первой покупке
             setPlayer(p => {
@@ -1385,6 +1510,61 @@ const Game = () => {
         setCoins(prev => prev.filter(c => c.id !== coinId));
     }, []);
 
+    const useItem = useCallback((itemId) => {
+        const quantity = consumables[itemId] || 0;
+        if (quantity <= 0) return;
+
+        // Уменьшаем количество
+        setConsumables(prev => ({
+            ...prev,
+            [itemId]: prev[itemId] - 1
+        }));
+
+        // Применяем эффект
+        setPlayer(p => {
+            let newPlayer = { ...p };
+
+            switch (itemId) {
+                case 'hp-potion':
+                    newPlayer.hp = Math.min(newPlayer.maxHp, newPlayer.hp + 50);
+                    break;
+                case 'big-hp-potion':
+                    newPlayer.hp = Math.min(newPlayer.maxHp, newPlayer.hp + 100);
+                    break;
+                case 'strength-potion':
+                    newPlayer.dmg += 20;
+                    setActiveEffects(prev => ({ ...prev, strength: Date.now() + 30000 }));
+                    setTimeout(() => {
+                        setPlayer(p => ({ ...p, dmg: p.dmg - 20 }));
+                        setActiveEffects(prev => ({ ...prev, strength: null }));
+                    }, 30000);
+                    break;
+                case 'invincibility':
+                    setActiveEffects(prev => ({ ...prev, invincibility: Date.now() + 10000 }));
+                    setTimeout(() => {
+                        setActiveEffects(prev => ({ ...prev, invincibility: null }));
+                    }, 10000);
+                    break;
+                case 'vampire-ring':
+                    setActiveEffects(prev => ({ ...prev, vampire: true }));
+                    break;
+                case 'speed-boots':
+                    setActiveEffects(prev => ({ ...prev, speed: true }));
+                    break;
+                case 'crit-amulet':
+                    setActiveEffects(prev => ({ ...prev, crit: true }));
+                    break;
+                case 'dragon-heart':
+                    setActiveEffects(prev => ({ ...prev, vampire: true, speed: true, crit: true }));
+                    break;
+            }
+
+            return newPlayer;
+        });
+
+        SFXManager.playBuy();
+    }, [consumables]);
+
     // Игровой цикл - основной фикс движения
     useEffect(() => {
         if (gameState !== 'playing') {
@@ -1400,12 +1580,13 @@ const Game = () => {
             if (player.hp <= 0) {
                 setIsShaking(true);
                 SFXManager.playDeath();
+                setActiveEffects({}); // Сбрасываем активные эффекты при смерти
                 setTimeout(() => setGameState('dead'), 800);
                 return;
             }
 
             // Движение игрока
-            const s = 4;
+            const s = activeEffects.speed ? 6 : 4; // Увеличенная скорость с ботинками
             setPlayer(prev => {
                 let nx = prev.x, ny = prev.y;
                 
@@ -1486,6 +1667,11 @@ const Game = () => {
                             
                             setTimeout(() => {
                                 setPlayer(p => {
+                                    // Проверка на неуязвимость
+                                    if (activeEffects.invincibility && Date.now() < activeEffects.invincibility) {
+                                        return p;
+                                    }
+                                    
                                     if (p.hp > 0) {
                                         let damage = newEn.damage || 10;
                                         if (p.shield) damage *= (1 - p.shield);
@@ -1702,6 +1888,7 @@ const Game = () => {
                 <Shop 
                     money={money}
                     inventory={inventory}
+                    consumables={consumables}
                     equippedPet={equippedPet}
                     equippedWeapon={equippedWeapon}
                     buyItem={buyItem}
@@ -1743,6 +1930,12 @@ const Game = () => {
                         enemyHpVisible={enemyHpVisible}
                         coins={coins}
                         removeCoin={removeCoin}
+                        consumables={consumables}
+                        useItem={useItem}
+                        activeEffects={activeEffects}
+                        abilitiesOpen={abilitiesOpen}
+                        setAbilitiesOpen={setAbilitiesOpen}
+                        isMobile={isMobile}
                         gameState={gameState}
                         onOpenShop={handleOpenShop}
                         onExitToMenu={handleExitToMenu}
