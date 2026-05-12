@@ -438,22 +438,33 @@ const EnemyShards = ({ x, y, onComplete }) => {
     );
 };
 
-const BloodParticles = ({ x, y, isPlayer = false }) => {
+const BloodParticles = ({ x, y, isPlayer = false, onComplete }) => {
     const [particles, setParticles] = useState([]);
+    const [isVisible, setIsVisible] = useState(true);
+    
     useEffect(() => {
         // 15-25 particles for player, 5-10 for enemy
         const particleCount = isPlayer ? 15 + Math.floor(Math.random() * 11) : 5 + Math.floor(Math.random() * 6);
         const newParticles = Array.from({ length: particleCount }, (_, i) => ({
             id: i, 
             angle: Math.random() * Math.PI * 2, 
-            distance: 50 + Math.random() * 80,
+            distance: 40 + Math.random() * 60,
             size: 8 + Math.random() * 4, // 8-12px
-            delay: Math.random() * 0.1
+            delay: Math.random() * 0.05
         }));
         setParticles(newParticles);
-        const timer = setTimeout(() => setParticles([]), 1000); // Disappear after 1s
+        
+        // Remove entire component after animation completes
+        const timer = setTimeout(() => {
+            setIsVisible(false);
+            if (onComplete) onComplete();
+        }, 800);
+        
         return () => clearTimeout(timer);
-    }, [x, y, isPlayer]);
+    }, [x, y, isPlayer, onComplete]);
+    
+    if (!isVisible) return null;
+    
     return (
         <>
             {particles.map(p => {
@@ -476,7 +487,7 @@ const BloodParticles = ({ x, y, isPlayer = false }) => {
             <style>{`
                 @keyframes blood-fly {
                     0% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
-                    100% { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(0.2); opacity: 0; }
+                    100% { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(0); opacity: 0; }
                 }
             `}</style>
         </>
@@ -988,7 +999,7 @@ const VictoryScreen = ({ onNextLevel, onMenu, level, coinsEarned }) => (
 const GameWorld = ({
     player, pet, enemies, playerSkinClass, petSkinClass, equippedPet, equippedWeapon, playerName,
     isAttacking, playerHpVisible, enemyHpVisible,
-    shards, bloodEffects, coins, removeShard, removeCoin,
+    shards, bloodEffects, coins, removeShard, removeCoin, removeBloodEffect,
     gameState, onOpenShop, onExitToMenu, currentMap
 }) => {
     if (gameState !== 'playing') return null;
@@ -1033,7 +1044,13 @@ const GameWorld = ({
             ))}
 
             {bloodEffects.map(blood => (
-                <BloodParticles key={blood.id} x={blood.x} y={blood.y} isPlayer={blood.isPlayer || false} />
+                <BloodParticles 
+                    key={blood.id} 
+                    x={blood.x} 
+                    y={blood.y} 
+                    isPlayer={blood.isPlayer || false} 
+                    onComplete={() => removeBloodEffect(blood.id)}
+                />
             ))}
 
             {coins.map(coin => (
@@ -1262,6 +1279,11 @@ const Game = () => {
         return true;
     };
 
+    const isPositionReachableFromPlayer = (posX, posY, playerStart, map) => {
+        // Check if enemy position is reachable from player start position
+        return canReachPlayer(posX, posY, playerStart.x, playerStart.y, map);
+    };
+
     const showPlayerHpBar = useCallback(() => {
         setPlayerHpVisible(true);
         if (playerHpTimer.current) clearTimeout(playerHpTimer.current);
@@ -1296,12 +1318,15 @@ const Game = () => {
         const stats = calculateEnemyStats(levelId);
         const enemyPositions = levelData.enemies || [];
 
-        // Валидация позиций врагов - проверяем что они не на стенах и не слишком близко к игроку
+        // Валидация позиций врагов - проверяем что они не на стенах, не слишком близко к игроку и достижимы
         const validEnemyPositions = enemyPositions.filter(pos => {
             if (!canMoveTo(pos.x, pos.y, levelData.map)) return false;
             // Check distance to player >= 80px
             const distToPlayer = Math.sqrt((pos.x - playerStart.x)**2 + (pos.y - playerStart.y)**2);
-            return distToPlayer >= 80;
+            if (distToPlayer < 80) return false;
+            // Check if position is reachable from player start
+            if (!isPositionReachableFromPlayer(pos.x, pos.y, playerStart, levelData.map)) return false;
+            return true;
         });
         
         // Гарантируем минимум 3 врага или столько, сколько было в уровне
@@ -1310,13 +1335,13 @@ const Game = () => {
         
         // Генерируем новых врагов если нужно
         let attempts = 0;
-        while (finalPositions.length < targetEnemyCount && attempts < 100) {
+        while (finalPositions.length < targetEnemyCount && attempts < 200) {
             const patrolPos = getPatrolTarget(levelData.map);
             if (patrolPos && 
                 !finalPositions.some(p => Math.abs(p.x - patrolPos.x) < 30 && Math.abs(p.y - patrolPos.y) < 30)) {
                 // Check distance to player >= 80px
                 const distToPlayer = Math.sqrt((patrolPos.x - playerStart.x)**2 + (patrolPos.y - playerStart.y)**2);
-                if (distToPlayer >= 80) {
+                if (distToPlayer >= 80 && isPositionReachableFromPlayer(patrolPos.x, patrolPos.y, playerStart, levelData.map)) {
                     finalPositions.push(patrolPos);
                 }
             }
@@ -1471,6 +1496,10 @@ const Game = () => {
 
     const removeCoin = useCallback((coinId) => {
         setCoins(prev => prev.filter(c => c.id !== coinId));
+    }, []);
+
+    const removeBloodEffect = useCallback((bloodId) => {
+        setBloodEffects(prev => prev.filter(b => b.id !== bloodId));
     }, []);
 
     // Игровой цикл - основной фикс движения
@@ -1838,6 +1867,7 @@ const Game = () => {
                         coins={coins}
                         removeShard={removeShard}
                         removeCoin={removeCoin}
+                        removeBloodEffect={removeBloodEffect}
                         gameState={gameState}
                         onOpenShop={handleOpenShop}
                         onExitToMenu={handleExitToMenu}
