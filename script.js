@@ -122,8 +122,6 @@ const MobileAttackButton = ({ onAttack }) => {
 };
 
 const MobileAbilitiesButton = ({ onToggle, hasItems }) => {
-    if (!hasItems) return null;
-    
     const handleToggle = useCallback((e) => {
         e.preventDefault();
         onToggle();
@@ -135,6 +133,8 @@ const MobileAbilitiesButton = ({ onToggle, hasItems }) => {
                 className="btn-abilities" 
                 onTouchStart={handleToggle}
                 onMouseDown={handleToggle}
+                disabled={!hasItems}
+                style={{ opacity: hasItems ? 1 : 0.3 }}
             >
                 ⚡
             </button>
