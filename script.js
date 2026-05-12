@@ -1,36 +1,50 @@
 const { useState, useEffect, useRef, useCallback, useReducer } = React;
 
 // ========== МОБИЛЬНЫЕ КОНТРОЛЫ ==========
-const VirtualJoystick = ({ onMove }) => {
+const DynamicJoystick = ({ onMove }) => {
     const joystickRef = useRef(null);
     const handleRef = useRef(null);
     const isActive = useRef(false);
-    
+    const centerX = useRef(0);
+    const centerY = useRef(0);
+
     useEffect(() => {
         const joystick = joystickRef.current;
         const handle = handleRef.current;
         if (!joystick || !handle) return;
-        
+
         const handleStart = (e) => {
             e.preventDefault();
+            const touch = e.touches ? e.touches[0] : e;
+            
+            // Проверяем, что касание в правой половине экрана
+            if (touch.clientX < window.innerWidth / 2) return;
+            
             isActive.current = true;
+            centerX.current = touch.clientX;
+            centerY.current = touch.clientY;
+            
+            // Позиционируем джойстик в точке касания
+            joystick.style.left = `${touch.clientX - 60}px`;
+            joystick.style.top = `${touch.clientY - 60}px`;
+            joystick.style.display = 'block';
+            
+            handle.style.transform = 'translate(0, 0)';
         };
-        
+
         const handleMove = (e) => {
             if (!isActive.current) return;
             e.preventDefault();
             
             const touch = e.touches ? e.touches[0] : e;
-            const rect = joystick.getBoundingClientRect();
-            const centerX = rect.left + rect.width / 2;
-            const centerY = rect.top + rect.height / 2;
             
-            let deltaX = touch.clientX - centerX;
-            let deltaY = touch.clientY - centerY;
+            let deltaX = touch.clientX - centerX.current;
+            let deltaY = touch.clientY - centerY.current;
             
+            const maxDistance = 60;
             const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-            const maxDistance = rect.width / 2 - 25;
             
+            // Ограничиваем расстояние
             if (distance > maxDistance) {
                 deltaX = (deltaX / distance) * maxDistance;
                 deltaY = (deltaY / distance) * maxDistance;
@@ -38,43 +52,37 @@ const VirtualJoystick = ({ onMove }) => {
             
             handle.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
             
+            // Нормализуем и передаем движение
             const normalizedX = deltaX / maxDistance;
             const normalizedY = deltaY / maxDistance;
             
             onMove({ x: normalizedX, y: normalizedY });
         };
-        
+
         const handleEnd = (e) => {
             e.preventDefault();
             isActive.current = false;
+            joystick.style.display = 'none';
             handle.style.transform = 'translate(0, 0)';
             onMove({ x: 0, y: 0 });
         };
-        
-        // Touch события
-        joystick.addEventListener('touchstart', handleStart, { passive: false });
-        joystick.addEventListener('touchmove', handleMove, { passive: false });
-        joystick.addEventListener('touchend', handleEnd, { passive: false });
-        joystick.addEventListener('touchcancel', handleEnd, { passive: false });
-        
-        // Mouse события (для тестирования)
-        joystick.addEventListener('mousedown', handleStart);
-        document.addEventListener('mousemove', handleMove);
-        document.addEventListener('mouseup', handleEnd);
-        
+
+        // Touch события на всем экране
+        document.addEventListener('touchstart', handleStart, { passive: false });
+        document.addEventListener('touchmove', handleMove, { passive: false });
+        document.addEventListener('touchend', handleEnd, { passive: false });
+        document.addEventListener('touchcancel', handleEnd, { passive: false });
+
         return () => {
-            joystick.removeEventListener('touchstart', handleStart);
-            joystick.removeEventListener('touchmove', handleMove);
-            joystick.removeEventListener('touchend', handleEnd);
-            joystick.removeEventListener('touchcancel', handleEnd);
-            joystick.removeEventListener('mousedown', handleStart);
-            document.removeEventListener('mousemove', handleMove);
-            document.removeEventListener('mouseup', handleEnd);
+            document.removeEventListener('touchstart', handleStart);
+            document.removeEventListener('touchmove', handleMove);
+            document.removeEventListener('touchend', handleEnd);
+            document.removeEventListener('touchcancel', handleEnd);
         };
     }, [onMove]);
-    
+
     return (
-        <div className="joystick-container" ref={joystickRef}>
+        <div className="dynamic-joystick-container" ref={joystickRef} style={{ display: 'none' }}>
             <div className="joystick-base">
                 <div className="joystick-handle" ref={handleRef} />
             </div>
@@ -107,7 +115,7 @@ const MobileControls = ({ onMove, onAttack, isVisible }) => {
     return (
         <div className="mobile-controls">
             <MobileAttackButton onAttack={onAttack} />
-            <VirtualJoystick onMove={onMove} />
+            <DynamicJoystick onMove={onMove} />
         </div>
     );
 };
