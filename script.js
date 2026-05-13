@@ -7,6 +7,7 @@ const DynamicJoystick = ({ onMove }) => {
     const isActive = useRef(false);
     const centerX = useRef(0);
     const centerY = useRef(0);
+    const lastMoveTime = useRef(0);
 
     useEffect(() => {
         const joystick = joystickRef.current;
@@ -35,6 +36,7 @@ const DynamicJoystick = ({ onMove }) => {
             isActive.current = true;
             centerX.current = touch.clientX;
             centerY.current = touch.clientY;
+            lastMoveTime.current = 0;
             
             // Позиционируем джойстик в точке касания
             joystick.style.left = `${touch.clientX - 60}px`;
@@ -46,7 +48,6 @@ const DynamicJoystick = ({ onMove }) => {
 
         const handleMove = (e) => {
             if (!isActive.current) return;
-            e.preventDefault();
             
             const touch = e.touches ? e.touches[0] : e;
             
@@ -63,6 +64,11 @@ const DynamicJoystick = ({ onMove }) => {
             }
             
             handle.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+            
+            // Throttling - вызываем onMove не чаще чем каждые 16ms
+            const now = Date.now();
+            if (now - lastMoveTime.current < 16) return;
+            lastMoveTime.current = now;
             
             // Нормализуем и передаем движение
             const normalizedX = deltaX / maxDistance;
@@ -81,7 +87,7 @@ const DynamicJoystick = ({ onMove }) => {
 
         // Touch события на всем экране
         document.addEventListener('touchstart', handleStart, { passive: false });
-        document.addEventListener('touchmove', handleMove, { passive: false });
+        document.addEventListener('touchmove', handleMove, { passive: true });
         document.addEventListener('touchend', handleEnd, { passive: false });
         document.addEventListener('touchcancel', handleEnd, { passive: false });
 
